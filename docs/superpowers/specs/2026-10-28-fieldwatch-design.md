@@ -173,7 +173,7 @@ InVeKoS-Import (Phase 6) pro Land:
 ### 6.1 Aufruf
 
 ```bash
-bash -c "$(curl -fsSL https://raw.githubusercontent.com/<USER>/fieldwatch-proxmox/main/install/fieldwatch.sh)"
+bash -c "$(curl -fsSL https://raw.githubusercontent.com/HatchetMan111/FeldWatch/main/install/fieldwatch.sh)"
 ```
 
 Lokal identisch: `git clone … && sudo bash install/fieldwatch.sh`.
@@ -189,7 +189,7 @@ tests/reboot-test.sh         # echter Reboot-Test auf dem Host
 ```
 
 Host-Script: `set -euo pipefail`, `trap … ERR`, Log nach
-`/var/log/fieldwatch-proxmox-install.log`, farbige `msg_info/msg_ok/msg_warn/
+`/var/log/fieldwatch-install.log`, farbige `msg_info/msg_ok/msg_warn/
 msg_error/die`-Helfer, `--debug` → `set -x` mit `PS4`-Timestamps.
 
 ### 6.3 Ablauf
@@ -334,10 +334,11 @@ m³     = week_mm · area_m2 / 1000
 ## 11. Frontend
 
 - React + TypeScript + Vite, MapLibre GL, Build-Artefakt im Repo.
-- **Basemap:** Default offline — `states.geojson` (Bundesland-Grenzen,
-  ~1 MB) auf neutralem Hintergrund. Optional `--basemap osm` für
-  Online-Rasterkacheln. Damit ist der LAN-Betrieb ohne externe Requests
-  möglich.
+- **Basemap:** Default ist eine neutrale, leere Karte (kein externer Request,
+  `--basemap local`); Feldgrenze, gezeichnete Entwürfe und die NDVI-Zeitachse
+  liegen darüber. Optional `--basemap osm` für Online-Rasterkacheln.
+  Bundesland-Grenzen als Offline-Hintergrund (`states.geojson`) sind eine
+  P1-Erweiterung, nicht Teil des MVP.
 - Ansichten: Karte mit Feldauswahl/Zeichnen → Zeitachse mit Play/Scrub →
   Wasser-Panel (7 Balken, mm und m³) → Methodenseite mit Formeln und
   Attribution.
@@ -405,7 +406,7 @@ MVP = P0–P5 (≈ 7–10 Entwicklertage). P6 ist der zweite, unabhängige Wurf.
 
 ## 16. Offene Punkte
 
-1. Finaler App-Name und GitHub-Repo (`<USER>/fieldwatch-proxmox`) — Platzhalter
+1. Finaler App-Name und GitHub-Repo (`HatchetMan111/FeldWatch`)
    im Script-Header und README.
 2. Welche Bundesländer in Phase 6 tatsächlich `available` werden — abhängig
    vom Spike-Ergebnis.
