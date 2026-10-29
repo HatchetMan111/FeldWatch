@@ -9,7 +9,7 @@ import numpy as np
 import rasterio
 from affine import Affine
 from pyproj import CRS, Transformer
-from rasterio.warp import Resampling, reproject
+from rasterio.warp import Resampling, reproject, transform_geom
 
 from .stac import SceneRef
 
@@ -86,6 +86,10 @@ def _read_asset(path: str, grid: Grid, resampling: Resampling) -> np.ndarray:
             resampling=resampling,
         )
     return destination
+
+
+def project_geometry(geometry: dict, grid: Grid) -> dict:
+    return transform_geom("EPSG:4326", grid.crs, geometry)
 
 
 def read_scene(scene: SceneRef, geometry: dict, grid: Grid) -> SceneArrays:
