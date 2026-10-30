@@ -8,3 +8,4 @@ app/web/node_modules/
 *.trace
 /var/
 .DS_Store
+*.egg-info/
