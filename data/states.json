@@ -1,0 +1,21 @@
+{
+  "version": 1,
+  "states": [
+    {"code": "BW", "name": "Baden-Württemberg", "status": "pending"},
+    {"code": "BY", "name": "Bayern", "status": "pending"},
+    {"code": "BE", "name": "Berlin", "status": "fallback"},
+    {"code": "BB", "name": "Brandenburg", "status": "pending"},
+    {"code": "HB", "name": "Bremen", "status": "fallback"},
+    {"code": "HH", "name": "Hamburg", "status": "fallback"},
+    {"code": "HE", "name": "Hessen", "status": "pending"},
+    {"code": "MV", "name": "Mecklenburg-Vorpommern", "status": "pending"},
+    {"code": "NI", "name": "Niedersachsen", "status": "pending"},
+    {"code": "NW", "name": "Nordrhein-Westfalen", "status": "pending"},
+    {"code": "RP", "name": "Rheinland-Pfalz", "status": "pending"},
+    {"code": "SL", "name": "Saarland", "status": "pending"},
+    {"code": "SN", "name": "Sachsen", "status": "pending"},
+    {"code": "ST", "name": "Sachsen-Anhalt", "status": "pending"},
+    {"code": "SH", "name": "Schleswig-Holstein", "status": "pending"},
+    {"code": "TH", "name": "Thüringen", "status": "pending"}
+  ]
+}
