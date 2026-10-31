@@ -85,3 +85,14 @@ def test_refresh_without_runner_is_503(client):
     field_id = client.post("/api/fields", json={"name": "T", "geometry": SQUARE}).json()["id"]
     r = client.post(f"/api/fields/{field_id}/refresh")
     assert r.status_code == 503
+
+
+def test_factory_exposes_full_deps(monkeypatch, tmp_path):
+    from fieldwatch.api import app_factory
+
+    monkeypatch.setenv("FIELDWATCH_DATA_DIR", str(tmp_path))
+    monkeypatch.setenv("FIELDWATCH_SCHEDULER", "0")
+    app = app_factory()
+    with TestClient(app) as c:
+        assert c.get("/api/config").json()["basemap"] in {"local", "osm"}
+        assert c.get("/healthz").status_code == 200

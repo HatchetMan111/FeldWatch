@@ -224,3 +224,16 @@ def create_app(settings: Settings | None = None, *, conn=None, deps: dict | None
             return {"app": "fieldwatch", "ui": "not built"}
 
     return api
+
+
+def app_factory() -> FastAPI:
+    from .cog import CogCache
+    from .runtime import build_deps
+    from .scheduler import start_scheduler
+
+    settings = load_settings()
+    conn = connect(settings.db_path)
+    cache = CogCache(settings.cache_dir, settings.cache_max_bytes)
+    instance = create_app(settings, conn=conn, deps=build_deps(settings, conn, cache))
+    instance.state.scheduler = start_scheduler(settings, conn, cache)
+    return instance
