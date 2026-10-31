@@ -12,6 +12,7 @@ export default function App() {
   const [selected, setSelected] = useState<FieldSummary | null>(null);
   const [draft, setDraft] = useState<GeoJSON.Polygon | null>(null);
   const [error, setError] = useState("");
+  const [hint, setHint] = useState("");
   const [frames, setFrames] = useState<Frame[]>([]);
   const [demand, setDemand] = useState<Record<string, unknown>>({ status: "unavailable" });
   const [index, setIndex] = useState(0);
@@ -29,6 +30,9 @@ export default function App() {
       const hit = await api.resolve(lat, lon);
       if (hit.found && hit.geometry) {
         setDraft(hit.geometry as GeoJSON.Polygon);
+        setHint("");
+      } else {
+        setHint('Kein Feldblock gefunden. Nutze „Feld zeichnen" und setze mindestens 3 Punkte.');
       }
     } catch (e) {
       setError(String(e));
@@ -79,18 +83,26 @@ export default function App() {
       <header>
         <strong>FieldWatch</strong>
         <span className="muted">{config.state === "none" ? "kein Bundesland" : config.state}</span>
-        <button onClick={save} disabled={!draft}>Feld speichern</button>
+        <button onClick={save} disabled={!draft} title={draft ? "Feld speichern" : "Zuerst ein Polygon zeichnen"}>
+          {draft ? "Feld speichern" : "Feld zeichnen, dann speichern"}
+        </button>
       </header>
       <main>
         <Map
           basemap={config.basemap}
           geometry={draft ?? (selected?.geometry as GeoJSON.Polygon | undefined) ?? null}
           onPoint={pick}
-          onPolygon={setDraft}
+          onPolygon={(g) => { setDraft(g); setHint(""); }}
         />
         <aside className="side">
           <h3>Felder</h3>
-          {fields.length === 0 && <p className="muted">Noch kein Feld. Auf die Karte tippen oder zeichnen.</p>}
+          {fields.length === 0 && (
+            <p className="muted">
+              Noch kein Feld. Oben rechts „Feld zeichnen" waehlen, mindestens 3 Punkte
+              auf die Karte setzen, dann „Feld speichern".
+            </p>
+          )}
+          {hint && <p className="muted">{hint}</p>}
           <ul>
             {fields.map((f) => (
               <li key={f.id}>

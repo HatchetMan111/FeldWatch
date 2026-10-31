@@ -19,7 +19,7 @@ STORAGE=""
 TEMPLATE_STORAGE="local"
 BRIDGE="vmbr0"
 STATE_CODE="ask"
-BASEMAP="local"
+BASEMAP="ask"
 REPO_URL="https://github.com/HatchetMan111/FeldWatch"
 REPO_REF="main"
 FORCE=0
@@ -194,6 +194,17 @@ ask_state() {
   whiptail --title "Bundesland" --menu "Region fuer Feldblock-Aufloesung:" 26 78 18 "${options[@]}" 3>&1 1>&2 2>&3
 }
 
+if [[ "$UPDATE_ONLY" == "1" ]]; then
+  if [[ "$STATE_CODE" == "ask" ]]; then
+    EXISTING_STATE="$(pct exec "$CTID" -- sed -n 's/^FIELDWATCH_STATE=//p' /etc/fieldwatch/config.env 2>/dev/null | tr -d '[:space:]')"
+    [[ -n "$EXISTING_STATE" ]] && STATE_CODE="$EXISTING_STATE"
+  fi
+  if [[ "$BASEMAP" == "ask" ]]; then
+    EXISTING_BASEMAP="$(pct exec "$CTID" -- sed -n 's/^FIELDWATCH_BASEMAP=//p' /etc/fieldwatch/config.env 2>/dev/null | tr -d '[:space:]')"
+    [[ -n "$EXISTING_BASEMAP" ]] && BASEMAP="$EXISTING_BASEMAP"
+  fi
+fi
+
 if [[ "$ASSUME_YES" != "1" && -t 0 ]]; then
   if [[ "$STATE_CODE" == "ask" ]]; then
     STATE_CODE="$(ask_state)" || die "Bundesland-Auswahl abgebrochen"
@@ -204,7 +215,9 @@ if [[ "$ASSUME_YES" != "1" && -t 0 ]]; then
 else
   if [[ "$STATE_CODE" == "ask" ]]; then STATE_CODE="none"; fi
 fi
+if [[ "$BASEMAP" == "ask" ]]; then BASEMAP="local"; fi
 msg_ok "Bundesland: ${STATE_CODE}"
+msg_ok "Basemap: ${BASEMAP}"
 
 if [[ "$UPDATE_ONLY" == "0" ]]; then
   msg_info "Template suchen"
