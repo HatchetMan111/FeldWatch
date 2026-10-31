@@ -51,3 +51,22 @@ footer { padding: 10px 16px; border-top: 1px solid var(--line); font-size: 12px;
   padding: 8px 10px; border: 1px solid var(--line); border-radius: 6px;
   background: rgba(15, 18, 16, 0.9); color: var(--muted); font-size: 13px;
 }
+.card {
+  border: 1px solid var(--line); border-radius: 10px; padding: 14px;
+  margin: 12px 0; background: rgba(23, 28, 25, 0.9);
+}
+.card h3 { margin: 0 0 10px; font-size: 15px; }
+.metrics { display: flex; gap: 10px; margin-bottom: 12px; }
+.metric { flex: 1; display: flex; flex-direction: column; }
+.metric-value { font-size: 24px; font-weight: 700; line-height: 1.1; }
+.metric-unit { font-size: 12px; color: var(--accent); }
+.metric-label { font-size: 11px; color: var(--muted); }
+.bars { display: flex; gap: 4px; align-items: flex-end; height: 70px; margin: 6px 0 10px; }
+.flags { margin: 8px 0 0; padding-left: 18px; }
+.muted.small { font-size: 12px; }
+.spark { width: 100%; height: auto; display: block; }
+.search { display: flex; gap: 8px; flex: 1; max-width: 420px; }
+.search input {
+  flex: 1; min-width: 0; padding: 9px 11px; border-radius: 6px;
+  border: 1px solid var(--line); background: #101512; color: var(--text);
+}

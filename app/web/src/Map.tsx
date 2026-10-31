@@ -6,11 +6,12 @@ import { draftData, fieldData } from "./draft";
 interface Props {
   basemap: string;
   geometry: GeoJSON.Polygon | null;
+  focus: { lon: number; lat: number } | null;
   onPoint: (lon: number, lat: number) => void;
   onPolygon: (geometry: GeoJSON.Polygon) => void;
 }
 
-export default function Map({ basemap, geometry, onPoint, onPolygon }: Props) {
+export default function Map({ basemap, geometry, focus, onPoint, onPolygon }: Props) {
   const container = useRef<HTMLDivElement>(null);
   const map = useRef<MlMap | null>(null);
   const [drawing, setDrawing] = useState(false);
@@ -116,6 +117,11 @@ export default function Map({ basemap, geometry, onPoint, onPolygon }: Props) {
     const source = instance?.getSource("field") as maplibregl.GeoJSONSource | undefined;
     source?.setData(fieldData(geometry));
   }, [geometry]);
+
+  useEffect(() => {
+    if (!focus || !map.current) return;
+    map.current.flyTo({ center: [focus.lon, focus.lat], zoom: 14, duration: 900 });
+  }, [focus]);
 
   useEffect(() => {
     const instance = map.current;

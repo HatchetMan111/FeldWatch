@@ -107,3 +107,30 @@ def test_missing_forecast_degrades():
     )
     assert result.demand["complete"] is False
     assert result.demand["status"] == "unavailable"
+
+
+def test_progress_is_reported_per_scene():
+    seen = []
+    analyse_field(
+        SQUARE,
+        scenes=[_scene("2026-09-01"), _scene("2026-10-01")],
+        arrays_for=lambda s: _arrays(),
+        forecast=_forecast(),
+        grid=GRID,
+        today=date(2026, 10, 20),
+        progress=lambda done, total: seen.append((done, total)),
+    )
+    assert seen[-1] == (2, 2)
+
+
+def test_parallel_reads_keep_results():
+    result = analyse_field(
+        SQUARE,
+        scenes=[_scene("2026-09-01"), _scene("2026-10-01"), _scene("2026-10-10")],
+        arrays_for=lambda s: _arrays(),
+        forecast=_forecast(),
+        grid=GRID,
+        today=date(2026, 10, 20),
+        workers=3,
+    )
+    assert len(result.observations) == 3

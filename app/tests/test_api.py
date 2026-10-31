@@ -126,4 +126,30 @@ def test_refresh_runs_in_background(tmp_path):
         st = c.get(f"/api/fields/{fid}/status").json()
         assert st["running"] is False
         assert st["error"] is None
+        assert "done" in st and "total" in st
+    conn.close()
+
+
+def test_geocode_uses_injected_deps(tmp_path):
+    from fieldwatch.api import create_app
+    from fieldwatch.config import Settings
+    from fieldwatch.db import connect, init_db
+    from fieldwatch.geocode import Place
+
+    settings = Settings(data_dir=tmp_path)
+    conn = connect(tmp_path / "geo.sqlite")
+    init_db(conn)
+    app = create_app(
+        settings,
+        conn=conn,
+        deps={"geocode": lambda q: Place(label="Berlin, 10115", lon=13.4, lat=52.5)},
+    )
+    with TestClient(app) as c:
+        r = c.get("/api/geocode", params={"q": "10115"})
+        assert r.status_code == 200
+        body = r.json()
+        assert body["found"] is True
+        assert body["lat"] == 52.5
+        assert body["label"].startswith("Berlin")
+        assert c.get("/api/geocode", params={"q": "x"}).status_code == 422
     conn.close()

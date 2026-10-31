@@ -129,6 +129,18 @@ def create_app(settings: Settings | None = None, *, conn=None, deps: dict | None
             "area_m2": hit.area_m2,
         }
 
+    @api.get("/api/geocode")
+    def geocode(q: str = Query(..., min_length=2)):
+        resolver = deps.get("geocode")
+        if resolver is None:
+            from .geocode import search as geocode_search
+
+            resolver = geocode_search
+        hit = resolver(q)
+        if hit is None:
+            return {"found": False}
+        return {"found": True, "label": hit.label, "lon": hit.lon, "lat": hit.lat}
+
     @api.post("/api/fields", status_code=201)
     def add_field(payload: FieldIn):
         validate_polygon(payload.geometry)
@@ -225,11 +237,16 @@ def create_app(settings: Settings | None = None, *, conn=None, deps: dict | None
     def status(field_id: int):
         if get_field(conn, field_id) is None:
             return _error(404, "not_found", "Feld existiert nicht")
+        from .runtime import progress_for
+
         job = jobs.get(field_id, {"running": False, "error": None})
+        progress = progress_for(field_id)
         return {
             "running": bool(job.get("running")),
             "error": job.get("error"),
             "observations": len(get_observations(conn, field_id)),
+            "done": int(progress.get("done", 0)),
+            "total": int(progress.get("total", 0)),
         }
 
     @api.get("/api/config")

@@ -65,3 +65,16 @@ def test_analyse_unknown_field_raises(conn, tmp_path):
     settings = Settings(data_dir=tmp_path)
     with pytest.raises(KeyError):
         analyse_field_by_id(999, settings=settings, conn=conn, cache=FakeCache(), clients=_clients())
+
+
+def test_progress_is_recorded(conn, tmp_path):
+    from fieldwatch.runtime import PROGRESS
+
+    settings = Settings(data_dir=tmp_path)
+    field_id = create_field(conn, "A", SQUARE, 800_000.0, "NW")
+    analyse_field_by_id(
+        field_id, settings=settings, conn=conn, cache=FakeCache(),
+        clients=_clients(), today=date(2026, 10, 20)
+    )
+    assert PROGRESS[field_id]["done"] == 1
+    assert PROGRESS[field_id]["total"] == 1

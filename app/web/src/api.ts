@@ -42,7 +42,11 @@ export const api = {
   refresh: (id: number) =>
     json<{ status: string }>(`/api/fields/${id}/refresh`, { method: "POST" }),
   status: (id: number) =>
-    json<{ running: boolean; error: string | null; observations: number }>(
+    json<{ running: boolean; error: string | null; observations: number; done: number; total: number }>(
       `/api/fields/${id}/status`
+    ),
+  geocode: (q: string) =>
+    json<{ found: boolean; label?: string; lon?: number; lat?: number }>(
+      `/api/geocode?q=${encodeURIComponent(q)}`
     ),
 };

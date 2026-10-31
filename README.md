@@ -130,6 +130,7 @@ bash install/fieldwatch.sh --debug --ctid <CTID>
 - `npm test`: 4 Tests, alle grün
 - `static-checks.sh`: OK
 - CLI-Smoke (51.2/7.0, 300 m, 12 Monate): 16 Beobachtungen, Demand 4,6 mm / 418 m³ (status `ok`), Dauer ca. 6 min beim ersten Lauf ohne Cache
+- UI: PLZ-/Ortssuche (Photon), Analyse als Hintergrund-Job mit Fortschritt (Szenen n/m), NDVI-Verlauf und Bedarfskarten
 - Installation LXC: offen (auf einem Proxmox-Host ausstehend)
 - Reboot-Test: offen (auf einem Proxmox-Host ausstehend)
 

@@ -15,6 +15,11 @@ from .stac import search
 from .weather import fetch_forecast
 
 CACHE_KEY = "{scene_id}:{asset}:{grid_crs}:{grid_w}x{grid_h}"
+PROGRESS: dict[int, dict] = {}
+
+
+def progress_for(field_id: int) -> dict:
+    return dict(PROGRESS.get(field_id, {}))
 
 
 def _default_clients(settings: Settings, cache: CogCache) -> dict:
@@ -63,6 +68,11 @@ def analyse_field_by_id(
     lon, lat = centroid(geometry)
     forecast = clients["forecast"](lat, lon, settings.forecast_days)
 
+    PROGRESS[field_id] = {"done": 0, "total": len(scenes)}
+
+    def _progress(done: int, total: int) -> None:
+        PROGRESS[field_id] = {"done": done, "total": total}
+
     result = analyse_field(
         geometry,
         scenes=scenes,
@@ -72,6 +82,8 @@ def analyse_field_by_id(
         min_clear_pct=settings.min_clear_pct,
         stale_days=settings.stale_days,
         today=today,
+        workers=4,
+        progress=_progress,
     )
 
     save_observations(conn, field_id, result.observations)

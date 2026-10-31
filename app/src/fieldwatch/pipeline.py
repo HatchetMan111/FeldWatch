@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass, field
 from datetime import date, datetime
 from typing import Callable
@@ -49,6 +50,8 @@ def analyse_field(
     min_clear_pct: float = 0.70,
     stale_days: int = 21,
     today: date | None = None,
+    workers: int = 1,
+    progress: Callable[[int, int], None] | None = None,
 ) -> AnalyseResult:
     today = today or date.today()
     result = AnalyseResult()
@@ -58,32 +61,48 @@ def analyse_field(
         result.demand = _empty_demand("insufficient_pixels", len(forecast))
         return result
 
-    for scene in sorted(scenes, key=lambda s: s.datetime):
-        arrays = arrays_for(scene)
-        valid = np.isfinite(arrays.red) & np.isfinite(arrays.nir)
-        ndvi = ndvi_array(arrays.red, arrays.nir)
-        scl = np.nan_to_num(arrays.scl, nan=0).astype(np.uint8)
-        clear = clear_mask(scl)
-        if clear_fraction(clear, inside) < min_clear_pct:
-            continue
-        stats = zonal_stats(ndvi, valid & clear, inside, clear)
-        if stats.median is None:
-            continue
-        if not stats.sufficient and "insufficient_pixels" not in result.flags:
-            result.flags.append("insufficient_pixels")
-        frame = to_uint8_frame(ndvi, valid & clear & inside)
-        result.observations.append(
-            {
-                "date": _parse_date(scene.datetime).isoformat(),
-                "median_ndvi": round(stats.median, 4),
-                "mean_ndvi": round(stats.mean, 4) if stats.mean is not None else None,
-                "clear_pct": round(stats.clear_pct, 4),
-                "pixels": stats.pixels,
-                "frame": frame.tobytes(),
-                "frame_width": int(frame.shape[1]),
-                "frame_height": int(frame.shape[0]),
-            }
-        )
+    ordered = sorted(scenes, key=lambda s: s.datetime)
+    total = len(ordered)
+    done = 0
+    batch_size = max(1, workers * 2)
+    for start in range(0, total, batch_size):
+        chunk = ordered[start : start + batch_size]
+        if workers > 1 and len(chunk) > 1:
+            with ThreadPoolExecutor(max_workers=workers) as pool:
+                futures = {scene.id: pool.submit(arrays_for, scene) for scene in chunk}
+                arrays_by_id = {scene.id: futures[scene.id].result() for scene in chunk}
+        else:
+            arrays_by_id = {scene.id: arrays_for(scene) for scene in chunk}
+
+        for scene in chunk:
+            arrays = arrays_by_id[scene.id]
+            done += 1
+            valid = np.isfinite(arrays.red) & np.isfinite(arrays.nir)
+            ndvi = ndvi_array(arrays.red, arrays.nir)
+            scl = np.nan_to_num(arrays.scl, nan=0).astype(np.uint8)
+            clear = clear_mask(scl)
+            if progress is not None:
+                progress(done, total)
+            if clear_fraction(clear, inside) < min_clear_pct:
+                continue
+            stats = zonal_stats(ndvi, valid & clear, inside, clear)
+            if stats.median is None:
+                continue
+            if not stats.sufficient and "insufficient_pixels" not in result.flags:
+                result.flags.append("insufficient_pixels")
+            frame = to_uint8_frame(ndvi, valid & clear & inside)
+            result.observations.append(
+                {
+                    "date": _parse_date(scene.datetime).isoformat(),
+                    "median_ndvi": round(stats.median, 4),
+                    "mean_ndvi": round(stats.mean, 4) if stats.mean is not None else None,
+                    "clear_pct": round(stats.clear_pct, 4),
+                    "pixels": stats.pixels,
+                    "frame": frame.tobytes(),
+                    "frame_width": int(frame.shape[1]),
+                    "frame_height": int(frame.shape[0]),
+                }
+            )
 
     if not result.observations:
         result.flags.append("no_clear_observation")
