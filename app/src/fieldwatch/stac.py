@@ -3,7 +3,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
 
-from .http import get_json
+from .http import post_json
 
 STAC_URL = "https://earth-search.aws.element84.com/v1/search"
 COLLECTION = "sentinel-2-l2a"
@@ -31,13 +31,14 @@ def search(
     max_cloud: int = 80,
     *,
     limit: int = 500,
+    max_scenes: int = 36,
     now: datetime | None = None,
-    fetch=get_json,
+    fetch=post_json,
 ) -> list[SceneRef]:
     payload = fetch(
         STAC_URL,
         {
-            "collections": COLLECTION,
+            "collections": [COLLECTION],
             "intersects": geometry,
             "datetime": _window(months, now),
             "query": {"eo:cloud_cover": {"lt": max_cloud}},
@@ -69,4 +70,25 @@ def search(
             )
         )
     scenes.sort(key=lambda s: s.datetime, reverse=True)
-    return scenes
+    scenes = _best_per_day(scenes)
+    return _thin(scenes, max_scenes)
+
+
+def _best_per_day(scenes: list[SceneRef]) -> list[SceneRef]:
+    best: dict[str, SceneRef] = {}
+    for scene in scenes:
+        day = scene.datetime[:10]
+        current = best.get(day)
+        if current is None or scene.cloud_cover < current.cloud_cover:
+            best[day] = scene
+    return sorted(best.values(), key=lambda s: s.datetime, reverse=True)
+
+
+def _thin(scenes: list[SceneRef], max_scenes: int) -> list[SceneRef]:
+    if max_scenes <= 0 or len(scenes) <= max_scenes:
+        return scenes
+    if max_scenes == 1:
+        return scenes[:1]
+    step = (len(scenes) - 1) / (max_scenes - 1)
+    keep = sorted({int(round(i * step)) for i in range(max_scenes)})
+    return [scenes[i] for i in keep]

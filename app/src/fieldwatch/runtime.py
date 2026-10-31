@@ -3,7 +3,9 @@ from __future__ import annotations
 from datetime import date
 from pathlib import Path
 
-from .cog import CogCache, make_grid, read_scene
+import numpy as np
+
+from .cog import CogCache, SceneArrays, make_grid, read_scene
 from .config import Settings
 from .db import get_field, log_source, save_demand, save_observations
 from .geo import bbox_of, buffer_bbox, centroid
@@ -20,7 +22,16 @@ def _default_clients(settings: Settings, cache: CogCache) -> dict:
         return make_grid(buffer_bbox(bbox_of(geometry), 0.10))
 
     def _arrays(scene, geometry, grid):
-        return read_scene(scene, geometry, grid)
+        key = CACHE_KEY.format(
+            scene_id=scene.id, asset="rgb", grid_crs=grid.crs,
+            grid_w=grid.width, grid_h=grid.height,
+        )
+        hit = cache.get(key)
+        if hit is not None and getattr(hit, "shape", (0,))[0] == 3:
+            return SceneArrays(red=hit[0], nir=hit[1], scl=hit[2])
+        arrays = read_scene(scene, geometry, grid)
+        cache.put(key, np.stack([arrays.red, arrays.nir, arrays.scl]))
+        return arrays
 
     return {
         "search": lambda geometry, months, max_cloud: search(

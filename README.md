@@ -124,6 +124,19 @@ Container-Log, `pct status` und `journalctl`. Fuer ein vollstaendiges Trace:
 bash install/fieldwatch.sh --debug --ctid <CTID>
 ```
 
+### Testprotokoll
+
+- `pytest`: 78 Tests, alle grün
+- `npm test`: 4 Tests, alle grün
+- `static-checks.sh`: OK
+- CLI-Smoke (51.2/7.0, 300 m, 12 Monate): 16 Beobachtungen, Demand 4,6 mm / 418 m³ (status `ok`), Dauer ca. 6 min beim ersten Lauf ohne Cache
+- Installation LXC: offen (auf einem Proxmox-Host ausstehend)
+- Reboot-Test: offen (auf einem Proxmox-Host ausstehend)
+
+Hinweis: Der erste Analyse-Lauf eines Feldes lädt die Sentinel-2-Ausschnitte
+von AWS (12 Monate, bis zu 36 Szenen). Spaetere Laeufe lesen aus dem lokalen
+Cache in `/var/lib/fieldwatch/cache`.
+
 ## Grenzen
 
 - **Nur LAN.** Kein TLS, keine Domain, kein Login. Nicht ins Internet stellen.
