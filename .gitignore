@@ -9,3 +9,4 @@ app/web/node_modules/
 /var/
 .DS_Store
 *.egg-info/
+*.tsbuildinfo
