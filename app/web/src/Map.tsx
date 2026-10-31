@@ -16,6 +16,8 @@ export default function Map({ basemap, geometry, onPoint, onPolygon }: Props) {
   const map = useRef<MlMap | null>(null);
   const [drawing, setDrawing] = useState(false);
   const points = useRef<[number, number][]>([]);
+  const geometryRef = useRef<GeoJSON.Polygon | null>(geometry);
+  geometryRef.current = geometry;
 
   useEffect(() => {
     if (!container.current || map.current) return;
@@ -33,7 +35,13 @@ export default function Map({ basemap, geometry, onPoint, onPolygon }: Props) {
             },
             layers: [{ id: "osm", type: "raster" as const, source: "osm" }],
           }
-        : { version: 8, sources: {}, layers: [] };
+        : {
+            version: 8,
+            sources: {},
+            layers: [
+              { id: "bg", type: "background", paint: { "background-color": "#141a17" } },
+            ],
+          };
 
     const instance = new maplibregl.Map({
       container: container.current,
@@ -43,7 +51,12 @@ export default function Map({ basemap, geometry, onPoint, onPolygon }: Props) {
     });
     instance.addControl(new maplibregl.NavigationControl(), "top-left");
     instance.on("load", () => {
-      instance.addSource("field", { type: "geojson", data: EMPTY });
+      instance.addSource("field", {
+        type: "geojson",
+        data: geometryRef.current
+          ? { type: "Feature", properties: {}, geometry: geometryRef.current }
+          : EMPTY,
+      });
       instance.addLayer({ id: "field-fill", type: "fill", source: "field",
         paint: { "fill-color": "#7fd48b", "fill-opacity": 0.18 } });
       instance.addLayer({ id: "field-line", type: "line", source: "field",
@@ -99,6 +112,15 @@ export default function Map({ basemap, geometry, onPoint, onPolygon }: Props) {
       >
         {drawing ? "Zeichnen beenden" : "Feld zeichnen"}
       </button>
+      {basemap !== "osm" && (
+        <div
+          className="muted"
+          style={{ position: "absolute", left: 12, bottom: 12, zIndex: 2, maxWidth: 320 }}
+        >
+          Leere Basiskarte: Feld direkt auf die Flaeche zeichnen oder die App mit
+          {" "}<code>--basemap osm</code> neu installieren.
+        </div>
+      )}
     </div>
   );
 }
