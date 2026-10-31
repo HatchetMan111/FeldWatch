@@ -204,6 +204,17 @@ def create_app(settings: Settings | None = None, *, conn=None, deps: dict | None
             return _error(503, "not_available", "Analyse ist nicht konfiguriert")
         return runner(field_id)
 
+    @api.get("/api/config")
+    def config():
+        return {
+            "basemap": settings.basemap,
+            "state": settings.state,
+            "attribution": [
+                "Contains modified Copernicus Sentinel data",
+                "Weather data by Open-Meteo.com (CC BY 4.0)",
+            ],
+        }
+
     if WEB_DIST.exists():
         api.mount("/", StaticFiles(directory=str(WEB_DIST), html=True), name="web")
     else:
