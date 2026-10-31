@@ -39,5 +39,10 @@ export const api = {
       headers: { "content-type": "application/json" },
       body: JSON.stringify({ name, geometry }),
     }),
-  refresh: (id: number) => json<Record<string, unknown>>(`/api/fields/${id}/refresh`, { method: "POST" }),
+  refresh: (id: number) =>
+    json<{ status: string }>(`/api/fields/${id}/refresh`, { method: "POST" }),
+  status: (id: number) =>
+    json<{ running: boolean; error: string | null; observations: number }>(
+      `/api/fields/${id}/status`
+    ),
 };

@@ -96,3 +96,34 @@ def test_factory_exposes_full_deps(monkeypatch, tmp_path):
     with TestClient(app) as c:
         assert c.get("/api/config").json()["basemap"] in {"local", "osm"}
         assert c.get("/healthz").status_code == 200
+
+
+def test_refresh_runs_in_background(tmp_path):
+    import threading
+    import time
+
+    from fieldwatch.api import create_app
+    from fieldwatch.config import Settings
+    from fieldwatch.db import connect, init_db
+
+    settings = Settings(data_dir=tmp_path)
+    conn = connect(tmp_path / "bg.sqlite")
+    init_db(conn)
+    done = threading.Event()
+
+    def analyse(field_id):
+        time.sleep(0.05)
+        done.set()
+        return {"ok": True}
+
+    app = create_app(settings, conn=conn, deps={"analyse": analyse})
+    with TestClient(app) as c:
+        fid = c.post("/api/fields", json={"name": "T", "geometry": SQUARE}).json()["id"]
+        r = c.post(f"/api/fields/{fid}/refresh")
+        assert r.status_code == 202
+        assert r.json()["status"] in {"started", "running"}
+        assert done.wait(2)
+        st = c.get(f"/api/fields/{fid}/status").json()
+        assert st["running"] is False
+        assert st["error"] is None
+    conn.close()

@@ -18,6 +18,8 @@ export default function App() {
   const [index, setIndex] = useState(0);
   const [t, setT] = useState(0);
   const [playing, setPlaying] = useState(false);
+  const [running, setRunning] = useState(false);
+  const [jobError, setJobError] = useState("");
 
   useEffect(() => {
     api.config().then(setConfig).catch((e) => setError(String(e)));
@@ -39,6 +41,49 @@ export default function App() {
     }
   }, []);
 
+  const loadResults = async (id: number) => {
+    const [fr, dm] = await Promise.all([api.frames(id), api.demand(id)]);
+    setFrames(fr.frames);
+    setDemand(dm);
+    setIndex(0);
+    setT(0);
+  };
+
+  const analyse = async (id: number) => {
+    setJobError("");
+    setRunning(true);
+    try {
+      await api.refresh(id);
+    } catch (e) {
+      setJobError(String(e));
+      setRunning(false);
+    }
+  };
+
+  useEffect(() => {
+    if (!running || !selected) return;
+    let cancelled = false;
+    const timer = window.setInterval(async () => {
+      try {
+        const st = await api.status(selected.id);
+        if (cancelled || st.running) return;
+        window.clearInterval(timer);
+        setRunning(false);
+        if (st.error) {
+          setJobError(st.error);
+        } else {
+          await loadResults(selected.id);
+        }
+      } catch (e) {
+        setJobError(String(e));
+      }
+    }, 3000);
+    return () => {
+      cancelled = true;
+      window.clearInterval(timer);
+    };
+  }, [running, selected]);
+
   const save = async () => {
     if (!draft) return;
     const name = window.prompt("Feldname", "Feld") ?? "Feld";
@@ -46,7 +91,13 @@ export default function App() {
       const { id } = await api.create(name, draft);
       const list = await api.fields();
       setFields(list.fields);
-      setSelected(list.fields.find((f) => f.id === id) ?? null);
+      const created = list.fields.find((f) => f.id === id) ?? null;
+      setSelected(created);
+      if (created) {
+        setFrames([]);
+        setDemand({ status: "unavailable" });
+        await analyse(id);
+      }
     } catch (e) {
       setError(String(e));
     }
@@ -55,11 +106,12 @@ export default function App() {
   const select = async (f: FieldSummary) => {
     setSelected(f);
     setDraft(f.geometry as GeoJSON.Polygon);
-    const [fr, dm] = await Promise.all([api.frames(f.id), api.demand(f.id)]);
-    setFrames(fr.frames);
-    setDemand(dm);
-    setIndex(0);
-    setT(0);
+    setJobError("");
+    try {
+      await loadResults(f.id);
+    } catch (e) {
+      setError(String(e));
+    }
   };
 
   useEffect(() => {
@@ -99,7 +151,7 @@ export default function App() {
           {fields.length === 0 && (
             <p className="muted">
               Noch kein Feld. Oben rechts „Feld zeichnen" waehlen, mindestens 3 Punkte
-              auf die Karte setzen, dann „Feld speichern".
+              auf die Karte setzen, dann „Speichern".
             </p>
           )}
           {hint && <p className="muted">{hint}</p>}
@@ -113,6 +165,27 @@ export default function App() {
               </li>
             ))}
           </ul>
+
+          {selected && (
+            <section>
+              <button onClick={() => analyse(selected.id)} disabled={running}>
+                {running ? "Analyse laeuft…" : "Satelliten-Analyse starten"}
+              </button>
+              {running && (
+                <p className="muted">
+                  Sentinel-2 der letzten 12 Monate wird geladen. Beim ersten Mal
+                  2-6 Minuten, danach aus dem Cache.
+                </p>
+              )}
+              {jobError && <p className="flag">Analyse fehlgeschlagen: {jobError}</p>}
+              {!running && frames.length === 0 && !jobError && (
+                <p className="muted">
+                  Noch keine Aufnahmen: „Satelliten-Analyse starten" klicken.
+                </p>
+              )}
+            </section>
+          )}
+
           {selected && <Demand payload={demand} />}
           <Method />
           {error && <p className="flag">{error}</p>}

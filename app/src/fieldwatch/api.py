@@ -3,6 +3,7 @@ from __future__ import annotations
 import base64
 import json
 import shutil
+import threading
 from datetime import date, timedelta
 from pathlib import Path
 
@@ -84,6 +85,8 @@ def create_app(settings: Settings | None = None, *, conn=None, deps: dict | None
     api.state.settings = settings
     api.state.conn = conn
     api.state.deps = deps
+    jobs: dict[int, dict] = {}
+    api.state.jobs = jobs
 
     @api.exception_handler(ValueError)
     async def _value_error(_request, exc: ValueError):
@@ -195,14 +198,39 @@ def create_app(settings: Settings | None = None, *, conn=None, deps: dict | None
             "missing_days": settings.forecast_days,
         }
 
-    @api.post("/api/fields/{field_id}/refresh")
+    @api.post("/api/fields/{field_id}/refresh", status_code=202)
     def refresh(field_id: int):
         if get_field(conn, field_id) is None:
             return _error(404, "not_found", "Feld existiert nicht")
         runner = deps.get("analyse")
         if runner is None:
             return _error(503, "not_available", "Analyse ist nicht konfiguriert")
-        return runner(field_id)
+        if jobs.get(field_id, {}).get("running"):
+            return {"status": "running"}
+
+        def work():
+            jobs[field_id] = {"running": True, "error": None}
+            try:
+                runner(field_id)
+            except Exception as exc:  # noqa: BLE001 - Fehler wird an die UI gemeldet
+                jobs[field_id] = {"running": False, "error": str(exc)}
+            else:
+                jobs[field_id] = {"running": False, "error": None}
+
+        jobs[field_id] = {"running": True, "error": None}
+        threading.Thread(target=work, daemon=True).start()
+        return {"status": "started"}
+
+    @api.get("/api/fields/{field_id}/status")
+    def status(field_id: int):
+        if get_field(conn, field_id) is None:
+            return _error(404, "not_found", "Feld existiert nicht")
+        job = jobs.get(field_id, {"running": False, "error": None})
+        return {
+            "running": bool(job.get("running")),
+            "error": job.get("error"),
+            "observations": len(get_observations(conn, field_id)),
+        }
 
     @api.get("/api/config")
     def config():
@@ -228,12 +256,22 @@ def create_app(settings: Settings | None = None, *, conn=None, deps: dict | None
 
 def app_factory() -> FastAPI:
     from .cog import CogCache
-    from .runtime import build_deps
+    from .runtime import analyse_field_by_id, build_deps
     from .scheduler import start_scheduler
 
     settings = load_settings()
     conn = connect(settings.db_path)
     cache = CogCache(settings.cache_dir, settings.cache_max_bytes)
-    instance = create_app(settings, conn=conn, deps=build_deps(settings, conn, cache))
+
+    def analyse(field_id: int) -> dict:
+        local = connect(settings.db_path)
+        try:
+            return analyse_field_by_id(field_id, settings=settings, conn=local, cache=cache)
+        finally:
+            local.close()
+
+    deps = build_deps(settings, conn, cache)
+    deps["analyse"] = analyse
+    instance = create_app(settings, conn=conn, deps=deps)
     instance.state.scheduler = start_scheduler(settings, conn, cache)
     return instance
