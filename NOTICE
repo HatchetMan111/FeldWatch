@@ -1,0 +1,28 @@
+FieldWatch - Attribution und Lizenzen
+=====================================
+
+Daten und Dienste
+-----------------
+Sentinel-2 L2A
+  Enthaelt modifizierte Copernicus-Sentinel-Daten.
+  Zugriff ueber AWS Earth Search (Element 84).
+  https://registry.opendata.aws/sentinel-2-l2a-cogs/
+
+Open-Meteo
+  Weather data by Open-Meteo.com
+  Lizenz: CC BY 4.0
+  https://open-meteo.com/
+
+Boden- und Modellgrundlage
+--------------------------
+Trout, T.J. & Johnson, L.F. (2007): Estimating crop water use from
+remotely sensed NDVI, crop coefficients, and reference evapotranspiration.
+USDA-ARS. Formeln:
+  CC  = 1.22 * NDVI - 0.21   (0 <= CC <= 0.8)
+  Kcb = 1.13 * CC + 0.14
+
+Abgrenzung
+----------
+Dieses Projekt ist eine eigenstaendige Umsetzung der oeffentlich
+dokumentierten Methode. Es uebernimmt keine Inhalte, kein Design, keinen
+Namen und keinen Code von epicfields.app.
