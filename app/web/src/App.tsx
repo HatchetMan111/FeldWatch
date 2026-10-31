@@ -1,16 +1,75 @@
+import { useCallback, useEffect, useState } from "react";
+import { api, FieldSummary } from "./api";
+import Map from "./Map";
+
 export default function App() {
+  const [config, setConfig] = useState({ basemap: "local", state: "none", attribution: [] as string[] });
+  const [fields, setFields] = useState<FieldSummary[]>([]);
+  const [selected, setSelected] = useState<FieldSummary | null>(null);
+  const [draft, setDraft] = useState<GeoJSON.Polygon | null>(null);
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    api.config().then(setConfig).catch((e) => setError(String(e)));
+    api.fields().then((r) => setFields(r.fields)).catch((e) => setError(String(e)));
+  }, []);
+
+  const pick = useCallback(async (lon: number, lat: number) => {
+    setError("");
+    try {
+      const hit = await api.resolve(lat, lon);
+      if (hit.found && hit.geometry) {
+        setDraft(hit.geometry as GeoJSON.Polygon);
+      }
+    } catch (e) {
+      setError(String(e));
+    }
+  }, []);
+
+  const save = async () => {
+    if (!draft) return;
+    const name = window.prompt("Feldname", "Feld") ?? "Feld";
+    try {
+      const { id } = await api.create(name, draft);
+      const list = await api.fields();
+      setFields(list.fields);
+      setSelected(list.fields.find((f) => f.id === id) ?? null);
+    } catch (e) {
+      setError(String(e));
+    }
+  };
+
   return (
     <div className="app">
       <header>
         <strong>FieldWatch</strong>
-        <span className="muted">Oberfläche wird geladen…</span>
+        <span className="muted">{config.state === "none" ? "kein Bundesland" : config.state}</span>
+        <button onClick={save} disabled={!draft}>Feld speichern</button>
       </header>
       <main>
-        <div className="map" />
+        <Map
+          basemap={config.basemap}
+          geometry={draft ?? (selected?.geometry as GeoJSON.Polygon | undefined) ?? null}
+          onPoint={pick}
+          onPolygon={setDraft}
+        />
         <aside className="side">
-          <p className="muted">Feld auswählen oder zeichnen.</p>
+          <h3>Felder</h3>
+          {fields.length === 0 && <p className="muted">Noch kein Feld. Auf die Karte tippen oder zeichnen.</p>}
+          <ul>
+            {fields.map((f) => (
+              <li key={f.id}>
+                <button className="ghost" onClick={() => { setSelected(f); setDraft(f.geometry as GeoJSON.Polygon); }}>
+                  {f.name}
+                </button>
+                <span className="muted"> {Math.round(f.area_m2 / 10000)} ha</span>
+              </li>
+            ))}
+          </ul>
+          {error && <p className="flag">{error}</p>}
         </aside>
       </main>
+      <footer>{config.attribution.join(" · ")}</footer>
     </div>
   );
 }
