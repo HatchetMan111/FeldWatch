@@ -216,7 +216,10 @@ if [[ "$UPDATE_ONLY" == "0" ]]; then
     pveam download "$TEMPLATE_STORAGE" "$TEMPLATE"
   fi
   TEMPLATE_PATH="$(pveam list "$TEMPLATE_STORAGE" | awk -v t="$TEMPLATE" 'index($0,t){print $1; exit}')"
-  [[ -f "$TEMPLATE_PATH" ]] || die "Template-Pfad nicht gefunden"
+  if [[ -z "$TEMPLATE_PATH" ]]; then
+    TEMPLATE_PATH="${TEMPLATE_STORAGE}:vztmpl/${TEMPLATE}"
+  fi
+  msg_ok "Template: ${TEMPLATE_PATH}"
 
   if [[ -z "$STORAGE" ]]; then
     STORAGE="$(pvesm status --content rootdir | awk 'NR==2{print $1}')"
