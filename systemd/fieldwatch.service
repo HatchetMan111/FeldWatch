@@ -1,0 +1,28 @@
+[Unit]
+Description=FieldWatch - lokale Feld- und Bewaesserungsanalyse (Web-UI :@APP_PORT@)
+Documentation=https://github.com/HatchetMan111/FeldWatch
+After=network-online.target
+Wants=network-online.target
+StartLimitIntervalSec=0
+
+[Service]
+Type=simple
+User=fieldwatch
+Group=fieldwatch
+WorkingDirectory=@APP_DIR@
+EnvironmentFile=/etc/fieldwatch/config.env
+Environment=PYTHONUNBUFFERED=1
+Environment=PYTHONDONTWRITEBYTECODE=1
+Environment=HOME=/var/lib/fieldwatch
+ExecStart=@APP_DIR@/venv/bin/uvicorn fieldwatch.api:app_factory --factory --host 0.0.0.0 --port @APP_PORT@ --app-dir @APP_DIR@/src
+Restart=always
+RestartSec=5
+TimeoutStopSec=30
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectHome=true
+ProtectSystem=strict
+ReadWritePaths=/var/lib/fieldwatch
+
+[Install]
+WantedBy=multi-user.target
