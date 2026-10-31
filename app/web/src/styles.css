@@ -32,3 +32,22 @@ footer { padding: 10px 16px; border-top: 1px solid var(--line); font-size: 12px;
   main { grid-template-columns: 1fr; grid-template-rows: 45vh auto; }
   .side { border-left: 0; border-top: 1px solid var(--line); }
 }
+.draw-btn {
+  position: absolute; top: 12px; right: 12px; z-index: 3;
+  padding: 11px 18px; font-size: 15px; box-shadow: 0 2px 12px rgba(0, 0, 0, 0.5);
+}
+.draw-panel {
+  position: absolute; top: 12px; right: 12px; z-index: 3;
+  display: flex; flex-direction: column; gap: 8px; width: 220px;
+  padding: 12px; border: 1px solid var(--line); border-radius: 8px;
+  background: rgba(15, 18, 16, 0.94); box-shadow: 0 2px 12px rgba(0, 0, 0, 0.5);
+}
+.draw-panel .hint { font-size: 13px; line-height: 1.4; }
+.draw-panel .row { display: flex; gap: 8px; }
+.draw-panel .row button { flex: 1; }
+.draw-panel button:disabled { opacity: 0.45; cursor: not-allowed; }
+.map-note {
+  position: absolute; left: 12px; bottom: 12px; z-index: 2; max-width: 340px;
+  padding: 8px 10px; border: 1px solid var(--line); border-radius: 6px;
+  background: rgba(15, 18, 16, 0.9); color: var(--muted); font-size: 13px;
+}

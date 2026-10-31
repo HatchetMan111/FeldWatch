@@ -84,7 +84,7 @@ export default function App() {
         <strong>FieldWatch</strong>
         <span className="muted">{config.state === "none" ? "kein Bundesland" : config.state}</span>
         <button onClick={save} disabled={!draft} title={draft ? "Feld speichern" : "Zuerst ein Polygon zeichnen"}>
-          {draft ? "Feld speichern" : "Feld zeichnen, dann speichern"}
+          Speichern
         </button>
       </header>
       <main>
