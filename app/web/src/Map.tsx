@@ -123,6 +123,7 @@ export default function Map({ basemap, geometry, focus, onPoint, onPolygon }: Pr
     });
     instance.addControl(new maplibregl.NavigationControl(), "top-left");
     instance.on("load", () => {
+      instance.resize();
       instance.addSource("field", { type: "geojson", data: fieldData(geometryRef.current) });
       instance.addLayer({
         id: "field-fill",
@@ -167,8 +168,34 @@ export default function Map({ basemap, geometry, focus, onPoint, onPolygon }: Pr
     };
     instance.on("click", click);
 
+    // MapLibres eingebautes trackResize basiert auf ResizeObserver und läuft
+    // nicht überall (z. B. eingebettete Panes ohne RO-Feuer). Ohne Nachziehen
+    // bleibt die Canvas auf ihrer Konstruktionsgröße stehen.
+    const observer = new ResizeObserver(() => instance.resize());
+    observer.observe(container.current);
+
+    // Fallback: Größe per window-resize und Polling gegenziehen, falls der
+    // ResizeObserver still bleibt. resize() kostet nichts, solange die
+    // Containergröße unverändert ist.
+    let lastW = container.current.clientWidth;
+    let lastH = container.current.clientHeight;
+    const syncSize = () => {
+      const el = container.current;
+      if (!el) return;
+      if (el.clientWidth !== lastW || el.clientHeight !== lastH) {
+        lastW = el.clientWidth;
+        lastH = el.clientHeight;
+        instance.resize();
+      }
+    };
+    window.addEventListener("resize", syncSize);
+    const sizePoll = window.setInterval(syncSize, 400);
+
     map.current = instance;
     return () => {
+      window.clearInterval(sizePoll);
+      window.removeEventListener("resize", syncSize);
+      observer.disconnect();
       instance.off("click", click);
       instance.remove();
       map.current = null;
