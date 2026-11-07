@@ -5,8 +5,10 @@ Debian-12-LXC, installiert FieldWatch und richtet einen reboot-festen
 `systemd`-Dienst ein. Die Web-UI ist nur im LAN erreichbar.
 
 FieldWatch zeigt pro Feld eine Wachstumsanimation aus echten
-Sentinel-2-Aufnahmen der letzten 12 Monate und den Wasserbedarf der naechsten
-7 Tage (NDVI -> Cover -> Kcb x FAO-56 ETo).
+Sentinel-2-Aufnahmen der letzten 24 Monate und den Wasserbedarf der naechsten
+7 Tage (NDVI -> Cover -> Kcb x FAO-56 ETo). Der NDVI-Verlauf wird ueber die
+Jahre mit frueheren Jahreszeiten verglichen und meldet automatisch
+Auffaelligkeiten (Einbrueche, Schwaechung gegenueber Vorjahren).
 
 ## Was wird installiert?
 
@@ -75,6 +77,23 @@ bash install/fieldwatch.sh --bundesland NW --ram 4096 --disk 32 --port 8080 --ye
 2. Auf die Karte tippen (Feldblock, falls importiert) oder ein Polygon zeichnen.
 3. Feld speichern, Analyse starten, Zeitachse abspielen.
 
+Die Karte startet im Luftbild-Modus (Esri World Imagery); oben rechts lässt
+sich jederzeit zwischen Luftbild, Karte (OSM) und Nacht umschalten. Beim
+Auswählen eines Felds zoomt die Karte automatisch auf die Fläche. Felder können
+in der Seitenleiste umbenannt (✎) oder gelöscht (✕) werden.
+
+### Auffälligkeiten
+
+Die UI prüft jede neue Aufnahme gegen zwei Regeln und markiert sie im
+NDVI-Verlauf rot bzw. in der Karte „Auffälligkeiten":
+
+- **Einbruch:** NDVI fällt um ≥ 0,15 gegenüber der vorherigen Aufnahme
+  (max. 14 Tage Abstand) – z. B. Hagel, Mahd oder Überflutung.
+- **Schwächer als Vorjahre:** NDVI liegt ≥ 0,15 unter dem Mittelwert des
+  gleichen Zeitraums (± 21 Tage) aus früheren Jahren (mind. 2 Vergleiche).
+
+Meldungen sind eine Orientierung – bitte vor Ort prüfen.
+
 ### Feldbloecke
 
 Fuer Laender mit `status: pending` in `data/states.json` gibt es noch keinen
@@ -126,16 +145,18 @@ bash install/fieldwatch.sh --debug --ctid <CTID>
 
 ### Testprotokoll
 
-- `pytest`: 78 Tests, alle grün
-- `npm test`: 4 Tests, alle grün
+- `pytest`: 104 Tests, alle grün
+- `npm test`: 8 Tests, alle grün
 - `static-checks.sh`: OK
 - CLI-Smoke (51.2/7.0, 300 m, 12 Monate): 16 Beobachtungen, Demand 4,6 mm / 418 m³ (status `ok`), Dauer ca. 6 min beim ersten Lauf ohne Cache
-- UI: PLZ-/Ortssuche (Photon), Analyse als Hintergrund-Job mit Fortschritt (Szenen n/m), NDVI-Verlauf und Bedarfskarten
+- UI: PLZ-/Ortssuche (Photon), Luftbild-Basemap mit Umschalter, Analyse als Hintergrund-Job mit Fortschrittsbalken (Szenen n/m), NDVI-Verlauf mit Anomalie-Markierung, Bedarfs- und Regenkarten, Felder umbenennen/löschen
+- Live-Smoke im Browser (lokal, Demo-Daten): Feldauswahl mit Auto-Zoom, Zeitachse mit Legende und Playback, Anomalie-Karte, Regenbalken, Umbenennen und Zeichnen-Flow geprüft
 - Installation LXC: offen (auf einem Proxmox-Host ausstehend)
 - Reboot-Test: offen (auf einem Proxmox-Host ausstehend)
 
 Hinweis: Der erste Analyse-Lauf eines Feldes lädt die Sentinel-2-Ausschnitte
-von AWS (12 Monate, bis zu 36 Szenen). Spaetere Laeufe lesen aus dem lokalen
+von AWS (24 Monate, bis zu 36 Szenen – die Szeneanzahl bleibt gleich, nur das
+Fenster ist weiter gespannt). Spaetere Laeufe lesen aus dem lokalen
 Cache in `/var/lib/fieldwatch/cache`.
 
 ## Grenzen

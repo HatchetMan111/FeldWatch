@@ -1,5 +1,5 @@
 import { useEffect, useRef } from "react";
-import { Frame, decodeFrame, interpolate, ramp } from "./frames";
+import { Frame, decodeFrame, interpolate, positionFor, ramp } from "./frames";
 
 interface Props {
   frames: Frame[];
@@ -37,31 +37,48 @@ export default function Timeline({ frames, index, t, onChange, playing, onToggle
   }, [frames, index, t]);
 
   if (frames.length === 0) {
-    return <div className="timeline muted">Noch keine Aufnahmen. „Analysieren" starten.</div>;
+    return (
+      <div className="timeline empty">
+        <span className="muted">
+          Noch keine Aufnahmen. Erst ein Feld speichern, dann „Satelliten-Analyse starten".
+        </span>
+      </div>
+    );
   }
+
+  const current = frames[Math.min(index, frames.length - 1)];
+  const shownDate = index < frames.length - 1 && t > 0 ? positionFor(frames, index, t) : current.date;
 
   return (
     <div className="timeline">
-      <div style={{ display: "flex", gap: 12, alignItems: "center" }}>
-        <button onClick={onToggle}>{playing ? "Pause" : "Play"}</button>
-        <canvas ref={canvas} style={{ width: 160, height: 160, imageRendering: "pixelated", borderRadius: 6 }} />
-        <div>
-          <div className="big">{frames[Math.min(index, frames.length - 1)].date}</div>
-          <div className="muted">{frames.length} Aufnahmen</div>
+      <canvas ref={canvas} className="timeline-canvas" />
+      <div className="timeline-info">
+        <div className="big">{shownDate}</div>
+        <div className="muted">
+          {frames.length} Aufnahmen · {index + 1}/{frames.length}
         </div>
-        <input
-          type="range"
-          min={0}
-          max={Math.max(frames.length - 1, 0)}
-          step={0.05}
-          value={index + t}
-          style={{ flex: 1 }}
-          onChange={(e) => {
-            const v = Number(e.target.value);
-            onChange(Math.floor(v), v - Math.floor(v));
-          }}
-        />
+        <div className="legend" aria-hidden="true">
+          <span className="muted small">karg</span>
+          <span className="legend-scale" />
+          <span className="muted small">dicht</span>
+        </div>
       </div>
+      <input
+        type="range"
+        min={0}
+        max={Math.max(frames.length - 1, 0)}
+        step={0.05}
+        value={index + t}
+        className="timeline-slider"
+        aria-label="Zeitachse"
+        onChange={(e) => {
+          const v = Number(e.target.value);
+          onChange(Math.floor(v), v - Math.floor(v));
+        }}
+      />
+      <button className="play-btn" onClick={onToggle} aria-label={playing ? "Pause" : "Abspielen"}>
+        {playing ? "❚❚" : "▶"}
+      </button>
     </div>
   );
 }

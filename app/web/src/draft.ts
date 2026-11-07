@@ -1,6 +1,8 @@
 export const EMPTY: GeoJSON.FeatureCollection = { type: "FeatureCollection", features: [] };
 
-export function fieldData(geometry: GeoJSON.Polygon | null): GeoJSON.FeatureCollection {
+export function fieldData(
+  geometry: GeoJSON.Polygon | GeoJSON.MultiPolygon | null
+): GeoJSON.FeatureCollection {
   return geometry
     ? {
         type: "FeatureCollection",

@@ -19,7 +19,7 @@ def test_defaults():
     assert s.state == "none"
     assert s.basemap == "local"
     assert s.forecast_days == 7
-    assert s.history_months == 12
+    assert s.history_months == 24
     assert s.max_cloud_cover == 80
     assert s.min_clear_pct == pytest.approx(0.70)
     assert s.stale_days == 21

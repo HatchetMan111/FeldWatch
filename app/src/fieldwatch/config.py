@@ -14,7 +14,7 @@ class Settings:
     data_dir: Path = Path("/var/lib/fieldwatch")
     repo_ref: str = "main"
     forecast_days: int = 7
-    history_months: int = 12
+    history_months: int = 24
     max_cloud_cover: int = 80
     min_clear_pct: float = 0.70
     stale_days: int = 21
@@ -60,7 +60,7 @@ def load_settings(env: Mapping[str, str] | None = None) -> Settings:
         data_dir=Path(e.get("FIELDWATCH_DATA_DIR", "/var/lib/fieldwatch")),
         repo_ref=e.get("FIELDWATCH_REPO_REF", "main") or "main",
         forecast_days=_int(e, "FIELDWATCH_FORECAST_DAYS", 7),
-        history_months=_int(e, "FIELDWATCH_HISTORY_MONTHS", 12),
+        history_months=_int(e, "FIELDWATCH_HISTORY_MONTHS", 24),
         max_cloud_cover=_int(e, "FIELDWATCH_MAX_CLOUD_COVER", 80, minimum=0),
         min_clear_pct=_float(e, "FIELDWATCH_MIN_CLEAR_PCT", 0.70),
         stale_days=_int(e, "FIELDWATCH_STALE_DAYS", 21),

@@ -77,7 +77,12 @@ def _field_row(row: sqlite3.Row | None) -> dict | None:
 
 
 def list_fields(conn) -> list[dict]:
-    return [_field_row(r) for r in conn.execute("SELECT * FROM fields ORDER BY id").fetchall()]
+    rows = conn.execute(
+        "SELECT f.*, MAX(o.date) AS last_obs, COUNT(o.date) AS obs_count"
+        " FROM fields f LEFT JOIN observations o ON o.field_id = f.id"
+        " GROUP BY f.id ORDER BY f.id"
+    ).fetchall()
+    return [_field_row(r) for r in rows]
 
 
 def get_field(conn, field_id: int) -> dict | None:
@@ -86,6 +91,15 @@ def get_field(conn, field_id: int) -> dict | None:
 
 def delete_field(conn, field_id: int) -> bool:
     cur = conn.execute("DELETE FROM fields WHERE id=?", (field_id,))
+    conn.commit()
+    return cur.rowcount > 0
+
+
+def update_field_name(conn, field_id: int, name: str) -> bool:
+    cur = conn.execute(
+        "UPDATE fields SET name=? WHERE id=?",
+        (name, field_id),
+    )
     conn.commit()
     return cur.rowcount > 0
 

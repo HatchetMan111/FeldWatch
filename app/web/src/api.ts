@@ -3,7 +3,55 @@ export interface FieldSummary {
   name: string;
   area_m2: number;
   state: string;
+  last_obs: string | null;
+  obs_count: number;
   geometry: { type: string; coordinates: unknown };
+}
+
+export interface Anomaly {
+  date: string;
+  type: string;
+  ndvi: number;
+  baseline: number;
+  delta: number;
+  text?: string;
+}
+
+export interface SeriesPoint {
+  date: string;
+  median_ndvi: number | null;
+  mean_ndvi: number | null;
+  clear_pct: number;
+  pixels: number;
+  anomalies?: Anomaly[];
+}
+
+export interface DemandPayload {
+  status: string;
+  reason?: string;
+  kcb?: number | null;
+  etc_mm?: Array<number | null>;
+  precip_mm?: Array<number | null>;
+  dates?: string[];
+  week_mm?: number | null;
+  week_m3?: number | null;
+  area_m2?: number;
+  cover?: number | null;
+  canopy_date?: string;
+  canopy_age_days?: number;
+  flags?: string[];
+}
+
+/** Deutsche, lesbare Meldung statt "[TypeError] Failed to fetch". */
+export function errMsg(e: unknown): string {
+  if (e instanceof Error) {
+    const text = e.message.replace(/^Error:\s*/, "");
+    if (/Failed to fetch|NetworkError|Load failed/i.test(text)) {
+      return "Server nicht erreichbar. Läuft der FieldWatch-Dienst?";
+    }
+    return text || "Unbekannter Fehler";
+  }
+  return String(e);
 }
 
 async function json<T>(url: string, init?: RequestInit): Promise<T> {
@@ -24,10 +72,10 @@ export const api = {
     json<{ frames: Array<{ date: string; width: number; height: number; data: string }> }>(
       `/api/fields/${id}/frames`
     ),
-  demand: (id: number) => json<Record<string, unknown>>(`/api/fields/${id}/demand`),
-  series: (id: number) =>
-    json<{ series: Array<{ date: string; median_ndvi: number | null; clear_pct: number }> }>(
-      `/api/fields/${id}/series`
+  demand: (id: number) => json<DemandPayload>(`/api/fields/${id}/demand`),
+  series: (id: number, months = 24) =>
+    json<{ series: SeriesPoint[]; anomalies: Anomaly[] }>(
+      `/api/fields/${id}/series?months=${months}`
     ),
   resolve: (lat: number, lon: number) =>
     json<{ found: boolean; geometry?: unknown; name?: string }>(
@@ -39,6 +87,13 @@ export const api = {
       headers: { "content-type": "application/json" },
       body: JSON.stringify({ name, geometry }),
     }),
+  rename: (id: number, name: string) =>
+    json<FieldSummary>(`/api/fields/${id}`, {
+      method: "PATCH",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ name }),
+    }),
+  remove: (id: number) => json<{ deleted: boolean }>(`/api/fields/${id}`, { method: "DELETE" }),
   refresh: (id: number) =>
     json<{ status: string }>(`/api/fields/${id}/refresh`, { method: "POST" }),
   status: (id: number) =>

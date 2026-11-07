@@ -13,6 +13,7 @@ from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
 from . import __version__
+from .anomalies import ANOMALY_TEXT, detect_anomalies
 from .config import Settings, load_settings
 from .db import (
     connect,
@@ -23,6 +24,7 @@ from .db import (
     get_observations,
     init_db,
     list_fields,
+    update_field_name,
 )
 from .geo import area_m2, validate_polygon
 
@@ -35,6 +37,10 @@ WEB_DIST = APP_ROOT / "web" / "dist"
 class FieldIn(BaseModel):
     name: str = Field(min_length=1, max_length=120)
     geometry: dict
+
+
+class FieldPatch(BaseModel):
+    name: str = Field(min_length=1, max_length=120)
 
 
 def _error(status: int, code: str, message: str, detail: str = "") -> JSONResponse:
@@ -164,6 +170,12 @@ def create_app(settings: Settings | None = None, *, conn=None, deps: dict | None
             return _error(404, "not_found", "Feld existiert nicht")
         return row
 
+    @api.patch("/api/fields/{field_id}")
+    def rename_field(field_id: int, payload: FieldPatch):
+        if not update_field_name(conn, field_id, payload.name):
+            return _error(404, "not_found", "Feld existiert nicht")
+        return get_field(conn, field_id)
+
     @api.delete("/api/fields/{field_id}")
     def remove_field(field_id: int):
         if not delete_field(conn, field_id):
@@ -176,6 +188,10 @@ def create_app(settings: Settings | None = None, *, conn=None, deps: dict | None
             return _error(404, "not_found", "Feld existiert nicht")
         cutoff = (date.today() - timedelta(days=int(months * 30.44))).isoformat()
         rows = [r for r in get_observations(conn, field_id) if r["date"] >= cutoff]
+        anomalies = detect_anomalies(rows)
+        by_date: dict[str, list[dict]] = {}
+        for anomaly in anomalies:
+            by_date.setdefault(anomaly["date"], []).append(anomaly)
         return {
             "series": [
                 {
@@ -184,9 +200,13 @@ def create_app(settings: Settings | None = None, *, conn=None, deps: dict | None
                     "mean_ndvi": r["mean_ndvi"],
                     "clear_pct": r["clear_pct"],
                     "pixels": r["pixels"],
+                    "anomalies": by_date.get(r["date"], []),
                 }
                 for r in rows
-            ]
+            ],
+            "anomalies": [
+                {**a, "text": ANOMALY_TEXT[a["type"]]} for a in anomalies
+            ],
         }
 
     @api.get("/api/fields/{field_id}/frames")
@@ -257,6 +277,7 @@ def create_app(settings: Settings | None = None, *, conn=None, deps: dict | None
             "attribution": [
                 "Contains modified Copernicus Sentinel data",
                 "Weather data by Open-Meteo.com (CC BY 4.0)",
+                "Luftbilder © Esri, Maxar, Earthstar Geographics",
             ],
         }
 

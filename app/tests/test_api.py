@@ -46,6 +46,25 @@ def test_create_and_list_field(client):
     assert len(client.get("/api/fields").json()["fields"]) == 1
 
 
+def test_rename_field(client):
+    field_id = client.post("/api/fields", json={"name": "Alt", "geometry": SQUARE}).json()["id"]
+    r = client.patch(f"/api/fields/{field_id}", json={"name": "Neu"})
+    assert r.status_code == 200
+    assert r.json()["name"] == "Neu"
+    assert client.get("/api/fields").json()["fields"][0]["name"] == "Neu"
+
+
+def test_rename_unknown_field_404(client):
+    r = client.patch("/api/fields/999", json={"name": "X"})
+    assert r.status_code == 404
+
+
+def test_rename_rejects_empty_name(client):
+    field_id = client.post("/api/fields", json={"name": "Alt", "geometry": SQUARE}).json()["id"]
+    r = client.patch(f"/api/fields/{field_id}", json={"name": ""})
+    assert r.status_code == 422
+
+
 def test_reject_invalid_polygon(client):
     r = client.post(
         "/api/fields",
@@ -73,6 +92,21 @@ def test_frames_empty_before_run(client):
     r = client.get(f"/api/fields/{field_id}/frames")
     assert r.status_code == 200
     assert r.json()["frames"] == []
+
+
+def test_series_reports_anomalies(client):
+    from fieldwatch.db import save_observations
+
+    field_id = client.post("/api/fields", json={"name": "T", "geometry": SQUARE}).json()["id"]
+    save_observations(client.app.state.conn, field_id, [
+        {"date": "2026-05-10", "median_ndvi": 0.70, "mean_ndvi": 0.70,
+         "clear_pct": 0.95, "pixels": 100},
+        {"date": "2026-05-18", "median_ndvi": 0.40, "mean_ndvi": 0.40,
+         "clear_pct": 0.95, "pixels": 100},
+    ])
+    body = client.get(f"/api/fields/{field_id}/series").json()
+    assert body["series"][1]["anomalies"][0]["type"] == "sudden_drop"
+    assert body["anomalies"][0]["text"].startswith("NDVI-Einbruch")
 
 
 def test_resolve_without_parcels_returns_not_found(client):

@@ -1,13 +1,14 @@
 export default function Method() {
   return (
-    <section>
-      <h3>Methode</h3>
+    <details className="card method">
+      <summary>Methode &amp; Grenzen</summary>
       <p className="muted">
         NDVI aus Sentinel-2 L2A (B04/B08, 10 m), Wolkenmaske über das SCL-Band.
-        Frames zwischen Überflügen linear interpoliert.
+        Frames zwischen Überflügen linear interpoliert. Auffälligkeiten werden gegen den
+        gleichen Zeitraum früherer Jahre und die vorherige Aufnahme geprüft.
       </p>
-      <pre style={{ fontSize: 12, overflowX: "auto" }}>
-{`CC   = clip(1.22 · NDVI − 0.21, 0, 0.8)
+      <pre>
+        {`CC   = clip(1.22 · NDVI − 0.21, 0, 0.8)
 Kcb  = 1.13 · CC + 0.14
 ETc  = Kcb · ETo
 m³   = mm · Fläche / 1000`}
@@ -15,11 +16,11 @@ m³   = mm · Fläche / 1000`}
       <p className="muted">
         Kalibriert für grüne Blätter und CC ≤ 0,8 (Trout &amp; Johnson 2007).
         Unbewachsener Boden, Netze und Beschattung unterschätzen den Bedarf.
-        Das Ergebnis ist keine Bewässerungsanweisung.
+        Das Ergebnis ist eine Orientierung, keine Bewässerungsanweisung.
       </p>
       <p className="muted">
-        Quellen: Copernicus Sentinel-2, Open-Meteo (CC BY 4.0).
+        Quellen: Copernicus Sentinel-2, Open-Meteo (CC BY 4.0), Luftbilder von Esri.
       </p>
-    </section>
+    </details>
   );
 }

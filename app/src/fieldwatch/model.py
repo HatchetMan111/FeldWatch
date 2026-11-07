@@ -19,13 +19,15 @@ def demand_from(kcb: float, eto: list[DailyEto | None], area_m2: float) -> dict:
         value = None if day is None else day.eto_mm
         etc.append(None if value is None else round(kcb * value, 3))
     valid = [v for v in etc if v is not None]
-    week_mm = round(sum(valid), 3)
+    week_mm = round(sum(valid), 3) if valid else None
     missing = sum(1 for v in etc if v is None)
     return {
         "kcb": round(kcb, 4),
         "etc_mm": etc,
+        "precip_mm": [None if day is None else day.precip_mm for day in eto],
+        "dates": [day.date if day is not None else None for day in eto],
         "week_mm": week_mm,
-        "week_m3": round(week_mm * float(area_m2) / 1000.0, 1),
+        "week_m3": None if week_mm is None else round(week_mm * float(area_m2) / 1000.0, 1),
         "area_m2": round(float(area_m2), 1),
         "complete": missing == 0 and len(etc) > 0,
         "missing_days": missing,

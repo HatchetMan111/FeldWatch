@@ -7,14 +7,15 @@ import numpy as np
 
 from .cog import CogCache, SceneArrays, make_grid, read_scene
 from .config import Settings
-from .db import get_field, log_source, save_demand, save_observations
+from .db import get_demand, get_field, log_source, save_demand, save_observations
 from .geo import bbox_of, buffer_bbox, centroid
+from .model import demand_from
 from .parcels import ParcelIndex
 from .pipeline import analyse_field
 from .stac import search
 from .weather import fetch_forecast
 
-CACHE_KEY = "{scene_id}:{asset}:{grid_crs}:{grid_w}x{grid_h}"
+CACHE_KEY = "{scene_id}:{asset}:{grid_crs}:{grid_x0:.3f}:{grid_y0:.3f}:{grid_w}x{grid_h}"
 PROGRESS: dict[int, dict] = {}
 
 
@@ -29,6 +30,7 @@ def _default_clients(settings: Settings, cache: CogCache) -> dict:
     def _arrays(scene, geometry, grid):
         key = CACHE_KEY.format(
             scene_id=scene.id, asset="rgb", grid_crs=grid.crs,
+            grid_x0=grid.transform.c, grid_y0=grid.transform.f,
             grid_w=grid.width, grid_h=grid.height,
         )
         hit = cache.get(key)
@@ -98,6 +100,37 @@ def analyse_field_by_id(
         "Copernicus",
     )
     return {"demand": result.demand, "flags": result.flags, "observations": len(result.observations)}
+
+
+def refresh_demand_by_id(
+    field_id: int,
+    *,
+    settings: Settings,
+    conn,
+    clients: dict | None = None,
+) -> dict:
+    """Aktualisiert nur die Wetterprognose eines Felds.
+
+    Kcb/Bedeckung kommen aus der letzten Satelliten-Analyse, es wird kein
+    Szenen-Datenverkehr erzeugt. Fuer Felder ohne Analyse passiert nichts.
+    """
+    field = get_field(conn, field_id)
+    if field is None:
+        raise KeyError(f"Feld {field_id} existiert nicht")
+    stored = get_demand(conn, field_id) or {}
+    kcb = stored.get("kcb")
+    if kcb is None:
+        return {"status": "skipped", "reason": "not_analysed"}
+
+    clients = clients or {"forecast": lambda lat, lon, days: fetch_forecast(lat, lon, days=days)}
+    lon, lat = centroid(field["geometry"])
+    forecast = clients["forecast"](lat, lon, settings.forecast_days)
+    demand = demand_from(float(kcb), forecast, field["area_m2"])
+    for key in ("cover", "canopy_date", "canopy_age_days", "flags"):
+        if key in stored:
+            demand[key] = stored[key]
+    save_demand(conn, field_id, demand)
+    return demand
 
 
 def build_deps(settings: Settings, conn, cache=None) -> dict:

@@ -12,6 +12,7 @@ from fieldwatch.db import (
     log_source,
     save_demand,
     save_observations,
+    update_field_name,
 )
 
 SQUARE = {
@@ -76,3 +77,26 @@ def test_source_log(conn):
 
 def test_wal_mode(conn):
     assert conn.execute("PRAGMA journal_mode").fetchone()[0].lower() == "wal"
+
+
+def test_rename_field(conn):
+    field_id = create_field(conn, "A", SQUARE, 1.0, "NW")
+    assert update_field_name(conn, field_id, "Acker West") is True
+    assert get_field(conn, field_id)["name"] == "Acker West"
+    assert update_field_name(conn, 9999, "X") is False
+
+
+def test_list_fields_reports_analysis_state(conn):
+    field_id = create_field(conn, "A", SQUARE, 1.0, "NW")
+    assert list_fields(conn)[0]["last_obs"] is None
+    assert list_fields(conn)[0]["obs_count"] == 0
+    save_observations(conn, field_id, [
+        {"date": "2026-01-01", "median_ndvi": 0.2, "mean_ndvi": 0.21,
+         "clear_pct": 0.9, "pixels": 100},
+        {"date": "2026-02-01", "median_ndvi": 0.4, "mean_ndvi": 0.41,
+         "clear_pct": 0.8, "pixels": 100},
+    ])
+    row = list_fields(conn)[0]
+    assert row["last_obs"] == "2026-02-01"
+    assert row["obs_count"] == 2
+    assert row["geometry"]["type"] == "Polygon"
