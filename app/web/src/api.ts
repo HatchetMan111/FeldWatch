@@ -49,6 +49,9 @@ export function errMsg(e: unknown): string {
     if (/Failed to fetch|NetworkError|Load failed/i.test(text)) {
       return "Server nicht erreichbar. Läuft der FieldWatch-Dienst?";
     }
+    if (/Server error|Bad Gateway|Gateway Time-?out|\b50[234]\b/.test(text)) {
+      return "Sentinel-2- oder Wetterquelle kurz nicht erreichbar — bitte in wenigen Minuten erneut versuchen.";
+    }
     return text || "Unbekannter Fehler";
   }
   return String(e);

@@ -1,12 +1,15 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from functools import partial
 
 from .http import get_json
 
 FORECAST_URL = "https://api.open-meteo.com/v1/forecast"
 ARCHIVE_URL = "https://archive-api.open-meteo.com/v1/archive"
 DAILY_FIELDS = "et0_fao_evapotranspiration,precipitation_sum"
+
+_forecast_get = partial(get_json, retries=2)
 
 
 @dataclass(frozen=True)
@@ -34,7 +37,8 @@ def _rows(payload: dict) -> list[DailyEto]:
     ]
 
 
-def fetch_forecast(lat: float, lon: float, days: int = 7, *, fetch=get_json) -> list[DailyEto]:
+def fetch_forecast(lat: float, lon: float, days: int = 7, *, fetch=None) -> list[DailyEto]:
+    fetch = fetch or _forecast_get
     payload = fetch(
         FORECAST_URL,
         {

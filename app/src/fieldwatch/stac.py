@@ -2,12 +2,16 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
+from functools import partial
 
 from .http import post_json
 
 STAC_URL = "https://earth-search.aws.element84.com/v1/search"
 COLLECTION = "sentinel-2-l2a"
 ASSETS = ("red", "nir", "scl")
+
+# 502er der STAC-API kommen kurz und gehaeuft vor — nachlegen statt abbrechen.
+_search_post = partial(post_json, retries=2)
 
 
 @dataclass(frozen=True)
@@ -33,8 +37,9 @@ def search(
     limit: int = 500,
     max_scenes: int = 36,
     now: datetime | None = None,
-    fetch=post_json,
+    fetch=None,
 ) -> list[SceneRef]:
+    fetch = fetch or _search_post
     payload = fetch(
         STAC_URL,
         {
