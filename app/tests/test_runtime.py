@@ -108,6 +108,40 @@ def test_refresh_demand_updates_forecast_without_scenes(conn, tmp_path):
     payload = get_demand(conn, field_id)
     assert payload["week_mm"] == pytest.approx(payload["kcb"] * 6.0 * 7, rel=1e-3)
     assert result["canopy_date"] == "2026-10-01"
+    # Regression: der stündliche Wetter-Refresh darf den Status nicht verlieren,
+    # sonst zeigt die UI trotz frischer Daten "Keine belastbare Berechnung".
+    assert payload["status"] == "ok"
+
+
+def test_refresh_demand_keeps_weather_fields(conn, tmp_path):
+    from fieldwatch.runtime import refresh_demand_by_id
+
+    settings = Settings(data_dir=tmp_path)
+    field_id = create_field(conn, "A", SQUARE, 800_000.0, "NW")
+    analyse_field_by_id(
+        field_id, settings=settings, conn=conn, cache=FakeCache(),
+        clients=_clients(), today=date(2026, 10, 20)
+    )
+
+    def wet_forecast(lat, lon, days):
+        return [
+            DailyEto(f"2026-10-{20+i:02d}", 2.0, 1.0, t_max_c=15.0, t_min_c=-1.0,
+                     wind_max_kmh=18.0, precip_prob_pct=40, soil_temp_c=9.5)
+            for i in range(days)
+        ]
+
+    refresh_demand_by_id(
+        field_id, settings=settings, conn=conn,
+        clients={"forecast": wet_forecast},
+    )
+    payload = get_demand(conn, field_id)
+    assert payload["temp_min_c"][0] == pytest.approx(-1.0)
+    assert payload["temp_max_c"][0] == pytest.approx(15.0)
+    assert payload["wind_max_kmh"][0] == pytest.approx(18.0)
+    assert payload["precip_prob_pct"][0] == pytest.approx(40.0)
+    assert payload["soil_temp_c"][0] == pytest.approx(9.5)
+    # Bilanz ueber gemeinsame Tage: 7x Regen 1.0 - 7x Bedarf kcb*2.0
+    assert payload["balance_mm"] == pytest.approx(round(7 * 1.0 - 7 * payload["kcb"] * 2.0, 2))
 
 
 def test_refresh_demand_skips_unanalysed_field(conn, tmp_path):

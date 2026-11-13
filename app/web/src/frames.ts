@@ -17,7 +17,8 @@ export function interpolate(a: Uint8Array, b: Uint8Array, t: number): Uint8Array
   const clamped = Math.min(Math.max(t, 0), 1);
   for (let i = 0; i < a.length; i += 1) {
     if (b[i] === 0) {
-      out[i] = 0;
+      // Loch im nächsten Frame nicht hart einblenden, sondern Pixel weich ausblenden.
+      out[i] = a[i] === 0 ? 0 : Math.round(a[i] * (1 - clamped));
       continue;
     }
     out[i] = Math.round(a[i] + (b[i] - a[i]) * clamped);

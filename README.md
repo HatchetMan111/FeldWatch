@@ -10,6 +10,12 @@ Sentinel-2-Aufnahmen der letzten 24 Monate und den Wasserbedarf der naechsten
 Jahre mit frueheren Jahreszeiten verglichen und meldet automatisch
 Auffaelligkeiten (Einbrueche, Schwaechung gegenueber Vorjahren).
 
+Zur Wasserbilanz (Regen minus Bedarf) liefert die Karte „Wetter & Feldarbeit"
+eine 7-Tage-Übersicht mit Tmin/Tmax (inkl. Frostwarnung), maximalem Wind,
+Regenrisiko, Bodentemperatur (0–7 cm, Aussaat-Hinweis) und einer
+Spritzfenster-Einschaetzung (Wind < 20 km/h, Regenrisiko <= 30 %) — alle Werte
+aus derselben Open-Meteo-Abfrage wie ETo.
+
 ## Was wird installiert?
 
 | Komponente | Detail |

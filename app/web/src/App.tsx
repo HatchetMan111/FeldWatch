@@ -3,6 +3,7 @@ import { Anomaly, api, DemandPayload, errMsg, FieldSummary, SeriesPoint } from "
 import Map from "./Map";
 import Timeline from "./Timeline";
 import Demand from "./Demand";
+import Weather from "./Weather";
 import Method from "./Method";
 import Series from "./Series";
 import FieldList from "./FieldList";
@@ -357,6 +358,7 @@ export default function App() {
           {anomalies.length > 0 && <Anomalies items={anomalies} />}
           {selected && <Series series={series} />}
           {selected && <Demand payload={demand} />}
+          {selected && <Weather payload={demand} />}
           <Method />
         </aside>
       </main>

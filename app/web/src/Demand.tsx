@@ -1,4 +1,5 @@
 import { DemandPayload } from "./api";
+import { weekdayOf } from "./dates";
 
 const FLAG_TEXT: Record<string, string> = {
   stale_canopy: "Letzte klare Aufnahme ist älter als 21 Tage.",
@@ -6,17 +7,8 @@ const FLAG_TEXT: Record<string, string> = {
   no_clear_observation: "Keine wolkenfreie Aufnahme im Zeitraum.",
 };
 
-const WEEKDAYS = ["So", "Mo", "Di", "Mi", "Do", "Fr", "Sa"];
-
 interface Props {
   payload: DemandPayload;
-}
-
-function weekdayOf(date: string | null | undefined, fallbackIndex: number): string {
-  if (!date) return `Tag ${fallbackIndex + 1}`;
-  const parsed = new Date(date);
-  if (Number.isNaN(parsed.getTime())) return `Tag ${fallbackIndex + 1}`;
-  return WEEKDAYS[parsed.getDay()];
 }
 
 export default function Demand({ payload }: Props) {
@@ -25,6 +17,7 @@ export default function Demand({ payload }: Props) {
   const dates = payload.dates ?? [];
   const weekMm = payload.week_mm;
   const weekM3 = payload.week_m3;
+  const balance = payload.balance_mm;
   const status = payload.status ?? "unavailable";
   const flags = (payload.flags ?? []).filter(Boolean);
   const cover = payload.cover;
@@ -65,6 +58,16 @@ export default function Demand({ payload }: Props) {
               <span className="metric-unit">%</span>
               <span className="metric-label">Bewachsung</span>
             </div>
+            <div className="metric">
+              <span
+                className={`metric-value${balance == null ? "" : balance >= 0 ? " good" : " warn"}`}
+                title="Regen minus Bedarf an Tagen mit beiden Werten"
+              >
+                {balance == null ? "–" : `${balance > 0 ? "+" : ""}${balance.toLocaleString("de-DE", { maximumFractionDigits: 1 })}`}
+              </span>
+              <span className="metric-unit">mm</span>
+              <span className="metric-label">Regen − Bedarf</span>
+            </div>
           </div>
 
           <div className="bar-group">
@@ -73,7 +76,7 @@ export default function Demand({ payload }: Props) {
                 <div
                   key={`etc-${i}`}
                   className="bar"
-                  title={`${weekdayOf(dates[i], i)}: ${v != null ? `${v.toLocaleString("de-DE")} mm Bedarf` : "keine Daten"}`}
+                  title={`${weekdayOf(dates[i]) || `Tag ${i + 1}`}: ${v != null ? `${v.toLocaleString("de-DE")} mm Bedarf` : "keine Daten"}`}
                   style={{
                     height: `${Math.min(100, ((v ?? 0) / maxEtc) * 100)}%`,
                     background: v === null ? "var(--danger-soft)" : "var(--accent)",
@@ -86,7 +89,7 @@ export default function Demand({ payload }: Props) {
                 <div
                   key={`rain-${i}`}
                   className="bar"
-                  title={`${weekdayOf(dates[i], i)}: ${v != null ? `${v.toLocaleString("de-DE")} mm Regen` : "keine Daten"}`}
+                  title={`${weekdayOf(dates[i]) || `Tag ${i + 1}`}: ${v != null ? `${v.toLocaleString("de-DE")} mm Regen` : "keine Daten"}`}
                   style={{ height: `${Math.min(100, ((v ?? 0) / maxRain) * 100)}%` }}
                 />
               ))}
@@ -94,7 +97,7 @@ export default function Demand({ payload }: Props) {
             <div className="bar-days">
               {etc.map((_, i) => (
                 <span key={`day-${i}`} className="muted small">
-                  {weekdayOf(dates[i], i)}
+                  {weekdayOf(dates[i]) || `Tag ${i + 1}`}
                 </span>
               ))}
             </div>
@@ -122,6 +125,7 @@ export default function Demand({ payload }: Props) {
       )}
       <p className="muted small">
         Bedarf, kein Verbrauch. Der Regen wird angezeigt, aber nicht vom Bedarf abgezogen.
+        Bilanz ist nur eine grobe Orientierung (kein Abfluss/Infiltration berücksichtigt).
       </p>
     </section>
   );

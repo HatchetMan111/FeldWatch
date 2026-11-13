@@ -129,6 +129,15 @@ def refresh_demand_by_id(
     for key in ("cover", "canopy_date", "canopy_age_days", "flags"):
         if key in stored:
             demand[key] = stored[key]
+    # Status analog zur Analyse ableiten — ohne ihn zeigt die UI trotz
+    # frischer Daten "Keine belastbare Berechnung" an.
+    missing = demand["missing_days"]
+    if missing == 0:
+        demand["status"] = "ok"
+    elif missing < len(demand["etc_mm"]):
+        demand["status"] = "partial"
+    else:
+        demand["status"] = "unavailable"
     save_demand(conn, field_id, demand)
     return demand
 

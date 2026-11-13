@@ -214,8 +214,8 @@ main { flex: 1; display: grid; grid-template-columns: 1fr 360px; min-height: 0; 
 .save-card .discard { margin-top: 8px; }
 
 /* ---------- Kennzahlen ---------- */
-.metrics { display: flex; gap: 10px; margin: 4px 0 14px; }
-.metric { flex: 1; display: flex; flex-direction: column; background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px; }
+.metrics { display: flex; flex-wrap: wrap; gap: 10px; margin: 4px 0 14px; }
+.metric { flex: 1 1 120px; display: flex; flex-direction: column; background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px; }
 .metric-value { font-size: 26px; font-weight: 700; line-height: 1.05; font-variant-numeric: tabular-nums; }
 .metric-unit { font-size: 12px; color: var(--accent); font-weight: 600; }
 .metric-label { font-size: 11px; color: var(--muted); margin-top: 2px; }
@@ -454,4 +454,36 @@ footer {
   .timeline-canvas { width: 56px; height: 56px; }
   .metric-value { font-size: 21px; }
   header { gap: 10px; }
+}
+
+/* ---------- Wetter & Feldarbeit ---------- */
+.weather-grid { display: flex; flex-direction: column; gap: 4px; margin-bottom: 10px; }
+.w-row { display: flex; gap: 4px; align-items: stretch; }
+.w-row > * { flex: 1; min-width: 0; }
+.w-label { flex: 0 0 62px; font-size: 11px; color: var(--muted); display: flex; align-items: center; white-space: nowrap; }
+.w-day { display: flex; flex-direction: column; align-items: center; gap: 1px; font-size: 12px; font-weight: 600; padding: 2px 0; }
+.w-day em { font-style: normal; font-weight: 400; }
+.w-val {
+  text-align: center;
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  padding: 3px 2px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.w-val.frost { border-color: var(--rain); color: var(--rain); }
+.w-val.warn { border-color: var(--warn); color: var(--warn); }
+.w-val.good { border-color: var(--accent-strong); color: var(--accent); }
+.w-val.mid { border-color: var(--warn); }
+.w-spray .w-val { font-weight: 700; }
+.weather-summary { margin: 8px 0 0; }
+.metric-value.good { color: var(--accent); }
+.metric-value.warn { color: var(--warn); }
+@media (max-width: 640px) {
+  .w-label { flex-basis: 48px; font-size: 10px; }
+  .w-val { font-size: 11px; padding: 3px 1px; }
 }

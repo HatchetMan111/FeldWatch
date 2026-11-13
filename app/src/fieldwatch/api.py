@@ -105,12 +105,17 @@ def create_app(settings: Settings | None = None, *, conn=None, deps: dict | None
             disk_ok = free > 200 * 1024 * 1024
         except OSError:
             disk_ok = True
+        try:
+            conn.execute("SELECT 1")
+            db_ok = True
+        except Exception:
+            db_ok = False
         return {
-            "status": "ok" if disk_ok else "degraded",
+            "status": "ok" if disk_ok and db_ok else "degraded",
             "version": __version__,
             "state": settings.state,
             "disk_ok": disk_ok,
-            "db_ok": True,
+            "db_ok": db_ok,
         }
 
     @api.get("/api/states")

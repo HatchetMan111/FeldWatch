@@ -33,8 +33,14 @@ export interface DemandPayload {
   etc_mm?: Array<number | null>;
   precip_mm?: Array<number | null>;
   dates?: string[];
+  temp_max_c?: Array<number | null>;
+  temp_min_c?: Array<number | null>;
+  wind_max_kmh?: Array<number | null>;
+  precip_prob_pct?: Array<number | null>;
+  soil_temp_c?: Array<number | null>;
   week_mm?: number | null;
   week_m3?: number | null;
+  balance_mm?: number | null;
   area_m2?: number;
   cover?: number | null;
   canopy_date?: string;

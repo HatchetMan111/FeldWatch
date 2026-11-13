@@ -26,5 +26,13 @@ def search(query: str, *, limit: int = 1, fetch=get_json) -> Place | None:
     lon, lat = feature["geometry"]["coordinates"][:2]
     props = feature.get("properties") or {}
     parts = [props.get("name"), props.get("street"), props.get("city"), props.get("postcode")]
-    label = ", ".join(str(p) for p in parts if p) or q
+    # Photon liefert oft name == city — Dubletten rausfiltern.
+    seen: set[str] = set()
+    unique = []
+    for part in parts:
+        text = str(part) if part else ""
+        if text and text.lower() not in seen:
+            seen.add(text.lower())
+            unique.append(text)
+    label = ", ".join(unique) or q
     return Place(label=label, lon=float(lon), lat=float(lat))

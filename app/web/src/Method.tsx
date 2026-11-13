@@ -19,6 +19,13 @@ m³   = mm · Fläche / 1000`}
         Das Ergebnis ist eine Orientierung, keine Bewässerungsanweisung.
       </p>
       <p className="muted">
+        Wetter &amp; Feldarbeit: tägliche Tmin/Tmax, Wind, Regenrisiko und Bodentemperatur
+        (0–7 cm) aus demselben Open-Meteo-Modell wie ETo. Spritzfenster (Wind &lt; 20 km/h,
+        Regenrisiko ≤ 30 %) und Frosthinweis (Tmin ≤ 0 °C) sind grobe Faustregeln —
+        keine Fachberatung; Grenzwerte je Kultur, Mittel und Witterung anders.
+        Bodentemperatur ist modellderiviert und ersetzt keine Messung im Feld.
+      </p>
+      <p className="muted">
         Quellen: Copernicus Sentinel-2, Open-Meteo (CC BY 4.0), Luftbilder von Esri.
       </p>
     </details>
