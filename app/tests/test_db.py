@@ -10,6 +10,7 @@ from fieldwatch.db import (
     init_db,
     list_fields,
     log_source,
+    overview_fields,
     save_demand,
     save_observations,
     update_field_name,
@@ -100,3 +101,40 @@ def test_list_fields_reports_analysis_state(conn):
     assert row["last_obs"] == "2026-02-01"
     assert row["obs_count"] == 2
     assert row["geometry"]["type"] == "Polygon"
+
+
+def test_overview_fields_empty(conn):
+    assert overview_fields(conn) == []
+
+
+def test_overview_fields_joins_last_obs_and_demand(conn):
+    field_id = create_field(conn, "Acker Nord", SQUARE, 800_000.0, "NW")
+    save_observations(conn, field_id, [
+        {"date": "2026-06-10", "median_ndvi": 0.40, "clear_pct": 0.9, "pixels": 100},
+        {"date": "2026-07-01", "median_ndvi": 0.62, "clear_pct": 0.9, "pixels": 100},
+    ])
+    save_demand(conn, field_id, {
+        "status": "ok", "week_mm": 25.8, "balance_mm": -2.3,
+        "cover": 0.6, "canopy_date": "2026-07-01", "canopy_age_days": 10,
+        "kcb": 0.82, "missing_days": 0,
+    })
+    rows = overview_fields(conn)
+    assert len(rows) == 1
+    row = rows[0]
+    assert row["last_obs"] == "2026-07-01"
+    assert row["last_ndvi"] == pytest.approx(0.62)
+    assert row["obs_count"] == 2
+    assert row["demand"]["week_mm"] == pytest.approx(25.8)
+    assert row["demand"]["balance_mm"] == pytest.approx(-2.3)
+    assert row["demand"]["canopy_age_days"] == 10
+    # Feldgeometrie bleibt ueber _field_row geparst
+    assert row["geometry"]["type"] == "Polygon"
+
+
+def test_overview_fields_unanalysed_has_none(conn):
+    create_field(conn, "Leer", SQUARE, 100_000.0, "none")
+    rows = overview_fields(conn)
+    assert rows[0]["last_obs"] is None
+    assert rows[0]["last_ndvi"] is None
+    assert rows[0]["obs_count"] == 0
+    assert rows[0]["demand"] is None

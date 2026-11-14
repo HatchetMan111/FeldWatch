@@ -85,6 +85,43 @@ def list_fields(conn) -> list[dict]:
     return [_field_row(r) for r in rows]
 
 
+DEMAND_SUMMARY_KEYS = (
+    "status",
+    "reason",
+    "week_mm",
+    "balance_mm",
+    "cover",
+    "canopy_date",
+    "canopy_age_days",
+    "missing_days",
+)
+
+
+def overview_fields(conn) -> list[dict]:
+    """Felder mit letzter Aufnahme (inkl. NDVI) und Demand-Kurzfassung."""
+    rows = conn.execute(
+        "SELECT f.*, o.date AS last_obs, o.median_ndvi AS last_ndvi,"
+        " (SELECT COUNT(*) FROM observations c WHERE c.field_id = f.id) AS obs_count,"
+        " d.payload AS demand_payload"
+        " FROM fields f"
+        " LEFT JOIN observations o ON o.date ="
+        "   (SELECT MAX(m.date) FROM observations m WHERE m.field_id = f.id)"
+        " LEFT JOIN demand d ON d.field_id = f.id"
+        " ORDER BY f.id"
+    ).fetchall()
+    out = []
+    for row in rows:
+        data = _field_row(row)
+        payload = row["demand_payload"]
+        if payload:
+            demand = json.loads(payload)
+            data["demand"] = {key: demand.get(key) for key in DEMAND_SUMMARY_KEYS}
+        else:
+            data["demand"] = None
+        out.append(data)
+    return out
+
+
 def get_field(conn, field_id: int) -> dict | None:
     return _field_row(conn.execute("SELECT * FROM fields WHERE id=?", (field_id,)).fetchone())
 

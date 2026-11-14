@@ -487,3 +487,70 @@ footer {
   .w-label { flex-basis: 48px; font-size: 10px; }
   .w-val { font-size: 11px; padding: 3px 1px; }
 }
+
+/* ---------- Ansicht-Umschalter & Felder-Übersicht ---------- */
+.view-nav { display: flex; gap: 6px; margin-left: 2px; }
+.view-nav button {
+  background: transparent;
+  border: 1px solid var(--line);
+  color: var(--muted);
+  padding: 8px 13px;
+  border-radius: 8px;
+  font-size: 13px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.view-nav button.active {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--accent-ink);
+  font-weight: 600;
+}
+.overview-main { overflow-y: auto; padding: 18px 22px; }
+.overview { max-width: 1080px; margin: 0 auto; }
+.overview-head { display: flex; align-items: baseline; gap: 12px; margin: 4px 0 16px; flex-wrap: wrap; }
+.overview-head h2 { margin: 0; font-size: 18px; }
+.overview-empty { max-width: 560px; margin: 48px auto; text-align: center; }
+.ov-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 14px; }
+.ov-card { display: flex; flex-direction: column; gap: 8px; }
+.ov-card.active { border-color: var(--accent); }
+.ov-line { margin: 0; }
+.ov-stats { display: flex; flex-wrap: wrap; gap: 6px; }
+.ov-chip {
+  font-size: 11.5px;
+  background: var(--panel-2);
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 3px 9px;
+  white-space: nowrap;
+}
+.ov-chip.good { border-color: var(--accent-strong); color: var(--accent); }
+.ov-chip.warn { border-color: var(--warn); color: var(--warn); }
+.ov-chip.ndvi-low { border-color: #a4704a; color: #e0a878; }
+.ov-chip.ndvi-mid { border-color: #b09a55; color: #e5cf7c; }
+.ov-chip.ndvi-high { border-color: #6fa85e; color: #a9d98a; }
+.ov-chip.ndvi-full { border-color: var(--accent-strong); color: var(--accent); }
+.ov-running { display: flex; flex-direction: column; gap: 4px; }
+.ov-actions { display: flex; flex-wrap: wrap; gap: 8px; align-items: stretch; margin-top: auto; }
+.ov-actions button { width: auto; }
+.ov-actions button:first-child { flex: 1 1 100%; }
+.ov-actions .ghost { flex: 1 1 auto; white-space: nowrap; }
+.ov-delete { flex: 0 0 auto; width: auto; display: flex; align-items: center; justify-content: center; white-space: nowrap; }
+
+/* ---------- NDVI-Erklärung ---------- */
+.ndvi-info { margin-top: 10px; border-top: 1px solid var(--line); padding-top: 8px; }
+.ndvi-info summary { cursor: pointer; color: var(--accent); font-size: 13px; font-weight: 600; }
+.ndvi-info p { margin: 8px 0 0; }
+.ndvi-scale { display: flex; gap: 2px; margin-top: 10px; height: 10px; border-radius: 5px; overflow: hidden; }
+.ndvi-scale .seg { flex: 1; }
+.seg1 { background: #a4704a; }
+.seg2 { background: #b09a55; }
+.seg3 { background: #6fa85e; }
+.seg4 { background: #35a05c; }
+.ndvi-scale-labels {
+  display: flex;
+  justify-content: space-between;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-top: 4px;
+}

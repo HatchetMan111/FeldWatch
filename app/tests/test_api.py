@@ -80,6 +80,26 @@ def test_unknown_field_404(client):
     assert r.json()["error"]["code"] == "not_found"
 
 
+def test_overview_endpoint(client):
+    from fieldwatch.db import save_observations, save_demand
+
+    field_id = client.post("/api/fields", json={"name": "T", "geometry": SQUARE}).json()["id"]
+    body = client.get("/api/overview").json()
+    assert len(body["fields"]) == 1
+    assert body["fields"][0]["demand"] is None
+
+    conn = client.app.state.conn
+    save_observations(conn, field_id, [
+        {"date": "2026-07-01", "median_ndvi": 0.55, "clear_pct": 0.9, "pixels": 100},
+    ])
+    save_demand(conn, field_id, {"status": "ok", "week_mm": 12.5})
+    body = client.get("/api/overview").json()
+    row = body["fields"][0]
+    assert row["last_ndvi"] == 0.55
+    assert row["demand"]["week_mm"] == 12.5
+    assert "geometry" in row
+
+
 def test_demand_unavailable_without_run(client):
     field_id = client.post("/api/fields", json={"name": "T", "geometry": SQUARE}).json()["id"]
     r = client.get(f"/api/fields/{field_id}/demand")

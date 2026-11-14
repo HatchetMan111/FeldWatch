@@ -1,5 +1,13 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Anomaly, api, DemandPayload, errMsg, FieldSummary, SeriesPoint } from "./api";
+import {
+  Anomaly,
+  api,
+  DemandPayload,
+  errMsg,
+  FieldOverview,
+  FieldSummary,
+  SeriesPoint,
+} from "./api";
 import Map from "./Map";
 import Timeline from "./Timeline";
 import Demand from "./Demand";
@@ -7,6 +15,7 @@ import Weather from "./Weather";
 import Method from "./Method";
 import Series from "./Series";
 import FieldList from "./FieldList";
+import Overview from "./Overview";
 import Anomalies from "./Anomalies";
 import { Frame } from "./frames";
 
@@ -32,8 +41,10 @@ export default function App() {
   const [demand, setDemand] = useState<DemandPayload>({ status: "unavailable" });
   const [pos, setPos] = useState(0);
   const [playing, setPlaying] = useState(false);
-  const [running, setRunning] = useState(false);
+  const [runningId, setRunningId] = useState<number | null>(null);
   const [progress, setProgress] = useState({ done: 0, total: 0 });
+  const [view, setView] = useState<"map" | "fields">("map");
+  const [overviewFields, setOverviewFields] = useState<FieldOverview[]>([]);
   const [jobError, setJobError] = useState("");
   const [query, setQuery] = useState("");
   const [place, setPlace] = useState("");
@@ -94,34 +105,46 @@ export default function App() {
     setPlaying(false);
   };
 
+  const loadOverview = useCallback(async () => {
+    try {
+      const r = await api.overview();
+      setOverviewFields(r.fields);
+    } catch {
+      /* Übersicht bleibt beim letzten Stand */
+    }
+  }, []);
+
   const analyse = async (id: number) => {
     setJobError("");
     setProgress({ done: 0, total: 0 });
-    setRunning(true);
+    setRunningId(id);
     try {
       await api.refresh(id);
     } catch (e) {
       setJobError(errMsg(e));
-      setRunning(false);
+      setRunningId(null);
     }
   };
 
   useEffect(() => {
-    if (!running || !selected) return;
+    if (runningId == null) return;
     let cancelled = false;
     const timer = window.setInterval(async () => {
       try {
-        const st = await api.status(selected.id);
+        const st = await api.status(runningId);
         if (cancelled) return;
         setProgress({ done: st.done, total: st.total });
         if (st.running) return;
         window.clearInterval(timer);
-        setRunning(false);
+        setRunningId(null);
         if (st.error) {
           setJobError(st.error);
-        } else {
-          await loadResults(selected.id);
+        } else if (selected?.id === runningId) {
+          await loadResults(runningId);
         }
+        const list = await api.fields();
+        setFields(list.fields);
+        await loadOverview();
       } catch (e) {
         setJobError(errMsg(e));
       }
@@ -131,7 +154,7 @@ export default function App() {
       window.clearInterval(timer);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [running, selected]);
+  }, [runningId, selected, loadOverview]);
 
   const draftIsNew =
     draft != null &&
@@ -172,14 +195,22 @@ export default function App() {
     try {
       const st = await api.status(f.id);
       if (st.running) {
-        setRunning(true);
+        setRunningId(f.id);
         setProgress({ done: st.done, total: st.total });
       } else {
-        setRunning(false);
+        setRunningId(null);
         await loadResults(f.id);
       }
     } catch (e) {
       setError(errMsg(e));
+    }
+  };
+
+  const openFromOverview = async (id: number) => {
+    const f = fields.find((x) => x.id === id);
+    if (f) {
+      await select(f);
+      setView("map");
     }
   };
 
@@ -209,7 +240,8 @@ export default function App() {
         setAnomalies([]);
         setDemand({ status: "unavailable" });
         setPlaying(false);
-        setRunning(false);
+        setRunningId(null);
+        setOverviewFields((list) => list.filter((x) => x.id !== f.id));
       }
     } catch (e) {
       setError(errMsg(e));
@@ -254,9 +286,36 @@ export default function App() {
           />
           <button type="submit">Suchen</button>
         </form>
+        <nav className="view-nav" aria-label="Ansicht">
+          <button className={view === "map" ? "active" : ""} onClick={() => setView("map")}>
+            Karte
+          </button>
+          <button
+            className={view === "fields" ? "active" : ""}
+            onClick={() => {
+              setView("fields");
+              loadOverview();
+            }}
+          >
+            Übersicht{fields.length > 0 ? ` (${fields.length})` : ""}
+          </button>
+        </nav>
         <span className="chip">{config.state === "none" ? "kein Bundesland" : config.state}</span>
       </header>
-      <main>
+      {view === "fields" ? (
+        <main className="overview-main">
+          <Overview
+            fields={overviewFields}
+            selectedId={selected?.id ?? null}
+            runningId={runningId}
+            progress={progress}
+            onOpen={openFromOverview}
+            onRerun={analyse}
+            onDelete={remove}
+          />
+        </main>
+      ) : (
+        <main>
         <Map
           basemap={config.basemap}
           geometry={
@@ -327,10 +386,13 @@ export default function App() {
                   Letzte Aufnahme: {formatDate(selected.last_obs)} · {selected.obs_count} Szenen
                 </p>
               )}
-              <button onClick={() => analyse(selected.id)} disabled={running}>
-                {running ? "Analyse läuft…" : "Satelliten-Analyse starten"}
+              <button
+                onClick={() => analyse(selected.id)}
+                disabled={runningId === selected.id}
+              >
+                {runningId === selected.id ? "Analyse läuft…" : "Satelliten-Analyse starten"}
               </button>
-              {running && (
+              {runningId === selected.id && (
                 <div className="progress">
                   <div
                     className="progress-bar"
@@ -340,7 +402,7 @@ export default function App() {
                   />
                 </div>
               )}
-              {running && (
+              {runningId === selected.id && (
                 <p className="muted small">
                   {progress.total > 0
                     ? `Szenen ${progress.done}/${progress.total} gelesen`
@@ -349,7 +411,7 @@ export default function App() {
                 </p>
               )}
               {jobError && <p className="flag">Analyse fehlgeschlagen: {jobError}</p>}
-              {!running && frames.length === 0 && !jobError && (
+              {runningId !== selected.id && frames.length === 0 && !jobError && (
                 <p className="muted">Noch keine Aufnahmen: Analyse starten.</p>
               )}
             </section>
@@ -361,18 +423,21 @@ export default function App() {
           {selected && <Weather payload={demand} />}
           <Method />
         </aside>
-      </main>
-      <Timeline
-        frames={frames}
-        index={Math.min(index, Math.max(frames.length - 1, 0))}
-        t={t}
-        onChange={(i, tt) => {
-          setPos(i + tt);
-          setPlaying(false);
-        }}
-        playing={playing}
-        onToggle={() => setPlaying((p) => !p)}
-      />
+        </main>
+      )}
+      {view === "map" && (
+        <Timeline
+          frames={frames}
+          index={Math.min(index, Math.max(frames.length - 1, 0))}
+          t={t}
+          onChange={(i, tt) => {
+            setPos(i + tt);
+            setPlaying(false);
+          }}
+          playing={playing}
+          onToggle={() => setPlaying((p) => !p)}
+        />
+      )}
       <footer>{config.attribution.join(" · ")}</footer>
     </div>
   );

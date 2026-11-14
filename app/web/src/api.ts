@@ -8,6 +8,22 @@ export interface FieldSummary {
   geometry: { type: string; coordinates: unknown };
 }
 
+export interface DemandSummary {
+  status?: string;
+  reason?: string | null;
+  week_mm?: number | null;
+  balance_mm?: number | null;
+  cover?: number | null;
+  canopy_date?: string | null;
+  canopy_age_days?: number | null;
+  missing_days?: number | null;
+}
+
+export interface FieldOverview extends FieldSummary {
+  last_ndvi: number | null;
+  demand: DemandSummary | null;
+}
+
 export interface Anomaly {
   date: string;
   type: string;
@@ -76,6 +92,7 @@ export const api = {
   config: () => json<{ basemap: string; state: string; attribution: string[] }>("/api/config"),
   states: () => json<{ states: Array<{ code: string; name: string; status: string }> }>("/api/states"),
   fields: () => json<{ fields: FieldSummary[] }>("/api/fields"),
+  overview: () => json<{ fields: FieldOverview[] }>("/api/overview"),
   field: (id: number) => json<FieldSummary>(`/api/fields/${id}`),
   frames: (id: number) =>
     json<{ frames: Array<{ date: string; width: number; height: number; data: string }> }>(

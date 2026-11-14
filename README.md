@@ -16,6 +16,13 @@ Regenrisiko, Bodentemperatur (0–7 cm, Aussaat-Hinweis) und einer
 Spritzfenster-Einschaetzung (Wind < 20 km/h, Regenrisiko <= 30 %) — alle Werte
 aus derselben Open-Meteo-Abfrage wie ETo.
 
+Im Kopf rechts oben schaltet man zwischen **Karte** und **Übersicht** um: Die
+Felder-Übersicht zeigt alle gespeicherten Felder als Karten mit letzter
+Aufnahme (inkl. NDVI-Wert), Bewachsung, Wasserbedarf, Bilanz und Veraltet-Hinweis
+— und direkt pro Feld „Analyse erneut" (Re-Run mit Fortschrittsanzeige) sowie
+„Auf Karte öffnen". Was NDVI bedeutet, wird aufklappbar in der NDVI-Verlauf-Karte
+erklärt (Farbskala karg → dicht).
+
 ## Was wird installiert?
 
 | Komponente | Detail |

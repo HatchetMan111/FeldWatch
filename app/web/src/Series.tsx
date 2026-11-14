@@ -78,6 +78,34 @@ export default function Series({ series }: Props) {
         {points[0].date} bis {points[points.length - 1].date} · {points.length} Aufnahmen · rote
         Punkte = Auffälligkeit
       </p>
+      <details className="ndvi-info">
+        <summary>Was ist NDVI?</summary>
+        <p className="muted small">
+          NDVI (Normalisierter Differenz-Vegetationsindex) ist ein Maß dafür, wie viel gesundes,
+          grünes Blattwerk auf der Fläche steht. Der Satellit (Sentinel-2, 10 m Auflösung) misst
+          zwei Kanäle: Rotlicht — das schlucken Pflanzen zum Photosynthetisieren — und
+          Nahinfrarot — das gesunde Blätter stark zurückwerfen. Je größer der Unterschied, desto
+          dichter und vitaler der Bestand. Der Wert liegt zwischen −1 und +1.
+        </p>
+        <div className="ndvi-scale" aria-hidden="true">
+          <span className="seg seg1" />
+          <span className="seg seg2" />
+          <span className="seg seg3" />
+          <span className="seg seg4" />
+        </div>
+        <div className="ndvi-scale-labels muted small">
+          <span>&lt; 0,2 karg (blosser Boden, Stroh)</span>
+          <span>0,2–0,45 Auflauf / Lücken</span>
+          <span>0,45–0,7 geschlossener Bestand</span>
+          <span>&gt; 0,7 dicht &amp; vital</span>
+        </div>
+        <p className="muted small">
+          Die Farben der Feldanimation („karg → dicht") folgen genau dieser Skala. Wasser,
+          Schatten oder Wolkenreste drücken den Wert — Wolken werden deshalb vorab über die
+          Satelliten-Klassifizierung rausgefiltert. NDVI ersetzt keine Feldbegehung, zeigt
+          Verläufe und Auffälligkeiten aber zuverlässig.
+        </p>
+      </details>
     </section>
   );
 }

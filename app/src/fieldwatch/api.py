@@ -24,6 +24,7 @@ from .db import (
     get_observations,
     init_db,
     list_fields,
+    overview_fields,
     update_field_name,
 )
 from .geo import area_m2, validate_polygon
@@ -167,6 +168,10 @@ def create_app(settings: Settings | None = None, *, conn=None, deps: dict | None
     @api.get("/api/fields")
     def fields():
         return {"fields": list_fields(conn)}
+
+    @api.get("/api/overview")
+    def overview():
+        return {"fields": overview_fields(conn)}
 
     @api.get("/api/fields/{field_id}")
     def field_detail(field_id: int):
